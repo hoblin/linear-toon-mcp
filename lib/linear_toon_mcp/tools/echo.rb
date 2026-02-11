@@ -5,6 +5,12 @@ module LinearToonMcp
     class Echo < MCP::Tool
       description "Accepts text input and returns it as-is"
 
+      annotations(
+        read_only_hint: true,
+        destructive_hint: false,
+        idempotent_hint: true
+      )
+
       input_schema(
         properties: {
           text: { type: "string", description: "Text to echo back" }
