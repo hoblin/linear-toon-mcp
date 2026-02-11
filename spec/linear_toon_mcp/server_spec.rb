@@ -12,7 +12,8 @@ RSpec.describe LinearToonMcp, ".server" do
     it "returns server info in handshake response" do
       expect(result).to include(
         result: include(
-          serverInfo: include(name: "linear-toon-mcp", version: LinearToonMcp::VERSION)
+          serverInfo: include(name: "linear-toon-mcp", version: LinearToonMcp::VERSION,
+                              description: a_kind_of(String))
         )
       )
     end
