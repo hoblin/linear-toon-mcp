@@ -2,3 +2,6 @@
 # frozen_string_literal: true
 
 require "linear_toon_mcp"
+
+transport = MCP::Server::Transports::StdioTransport.new(LinearToonMcp.server)
+transport.open
