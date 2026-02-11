@@ -11,6 +11,7 @@ module LinearToonMcp
     MCP::Server.new(
       name: "linear-toon-mcp",
       version: VERSION,
+      description: "Token-efficient MCP server for Linear using TOON format",
       tools: [Tools::Echo]
     )
   end
