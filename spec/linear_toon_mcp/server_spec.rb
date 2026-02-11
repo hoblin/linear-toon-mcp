@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
 RSpec.describe LinearToonMcp, ".server" do
-  subject(:server) { described_class.server }
-
-  def rpc(method, id: 1, **params)
-    server.handle({ jsonrpc: "2.0", id:, method:, params: })
-  end
+  let(:server) { described_class.server }
 
   describe "initialize" do
-    subject(:result) { rpc("initialize", protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "test" }) }
+    subject(:result) do
+      server.handle(jsonrpc: "2.0", id: 1, method: "initialize",
+                    params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "test" } })
+    end
 
     it "returns server info in handshake response" do
       expect(result).to include(
@@ -20,7 +19,7 @@ RSpec.describe LinearToonMcp, ".server" do
   end
 
   describe "tools/list" do
-    subject(:result) { rpc("tools/list") }
+    subject(:result) { server.handle(jsonrpc: "2.0", id: 1, method: "tools/list", params: {}) }
 
     it "lists the echo tool" do
       expect(result[:result][:tools]).to contain_exactly(
@@ -30,7 +29,10 @@ RSpec.describe LinearToonMcp, ".server" do
   end
 
   describe "tools/call" do
-    subject(:result) { rpc("tools/call", name: "echo", arguments: { text: "ping" }) }
+    subject(:result) do
+      server.handle(jsonrpc: "2.0", id: 1, method: "tools/call",
+                    params: { name: "echo", arguments: { text: "ping" } })
+    end
 
     it "returns the echoed text" do
       expect(result).to include(
