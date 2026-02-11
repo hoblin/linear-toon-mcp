@@ -8,7 +8,7 @@ module LinearToonMcp
   class Error < StandardError; end
 
   def self.server
-    @server ||= MCP::Server.new(
+    MCP::Server.new(
       name: "linear-toon-mcp",
       version: VERSION,
       tools: [Tools::Echo]
