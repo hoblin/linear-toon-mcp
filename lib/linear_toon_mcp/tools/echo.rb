@@ -13,7 +13,7 @@ module LinearToonMcp
 
       input_schema(
         properties: {
-          text: { type: "string", description: "Text to echo back" }
+          text: {type: "string", description: "Text to echo back"}
         },
         required: ["text"],
         additionalProperties: false
@@ -21,7 +21,7 @@ module LinearToonMcp
 
       class << self
         def call(text:, server_context: nil)
-          MCP::Tool::Response.new([{ type: "text", text: }])
+          MCP::Tool::Response.new([{type: "text", text:}])
         end
       end
     end

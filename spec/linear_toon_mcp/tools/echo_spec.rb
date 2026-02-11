@@ -8,7 +8,7 @@ RSpec.describe LinearToonMcp::Tools::Echo do
 
     it "returns the input text as-is" do
       expect(response).to be_a(MCP::Tool::Response)
-      expect(response.content).to eq([{ type: "text", text: }])
+      expect(response.content).to eq([{type: "text", text:}])
     end
   end
 end

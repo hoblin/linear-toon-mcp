@@ -6,7 +6,7 @@ RSpec.describe LinearToonMcp, ".server" do
   describe "initialize" do
     subject(:result) do
       server.handle(jsonrpc: "2.0", id: 1, method: "initialize",
-                    params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "test" } })
+        params: {protocolVersion: "2024-11-05", capabilities: {}, clientInfo: {name: "test"}})
     end
 
     it "returns server info in handshake response" do
@@ -31,12 +31,12 @@ RSpec.describe LinearToonMcp, ".server" do
   describe "tools/call" do
     subject(:result) do
       server.handle(jsonrpc: "2.0", id: 1, method: "tools/call",
-                    params: { name: "echo", arguments: { text: "ping" } })
+        params: {name: "echo", arguments: {text: "ping"}})
     end
 
     it "returns the echoed text" do
       expect(result).to include(
-        result: include(content: [{ type: "text", text: "ping" }])
+        result: include(content: [{type: "text", text: "ping"}])
       )
     end
   end
