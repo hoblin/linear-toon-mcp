@@ -13,6 +13,14 @@ RSpec.describe LinearToonMcp::Client do
     it "accepts a valid API key" do
       expect { described_class.new(api_key: "lin_api_test") }.not_to raise_error
     end
+
+    it "reads API key from LINEAR_API_KEY env var" do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("LINEAR_API_KEY").and_return("lin_env_key")
+
+      expect { described_class.new }.not_to raise_error
+    end
   end
 
   describe "#query" do

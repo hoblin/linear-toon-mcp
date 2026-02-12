@@ -50,6 +50,26 @@ RSpec.describe LinearToonMcp::Tools::GetIssue do
       )
     end
 
+    context "when the issue does not exist" do
+      before do
+        allow(client).to receive(:query).and_return("issue" => nil)
+      end
+
+      it "returns an error response" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Issue not found: TEST-1")
+      end
+    end
+
+    context "when server_context has no client" do
+      subject(:response) { described_class.call(id:, server_context: {}) }
+
+      it "returns an error response" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("client missing")
+      end
+    end
+
     context "when the API returns an error" do
       before do
         allow(client).to receive(:query).and_raise(LinearToonMcp::Error, "HTTP 400: Cannot query field")

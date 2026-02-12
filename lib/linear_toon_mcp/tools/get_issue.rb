@@ -50,9 +50,10 @@ module LinearToonMcp
 
       class << self
         def call(id:, server_context: nil)
-          client = server_context&.dig(:client) || Client.new
+          client = server_context&.dig(:client) or raise Error, "client missing from server_context"
           data = client.query(QUERY, variables: {id:})
-          text = Toon.encode(data["issue"])
+          issue = data["issue"] or raise Error, "Issue not found: #{id}"
+          text = Toon.encode(issue)
           MCP::Tool::Response.new([{type: "text", text:}])
         rescue Error => e
           MCP::Tool::Response.new([{type: "text", text: e.message}], error: true)
