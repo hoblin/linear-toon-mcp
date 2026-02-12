@@ -27,7 +27,8 @@ RSpec.describe LinearToonMcp, ".server" do
         include(name: "get_issue", description: "Retrieve a Linear issue by ID"),
         include(name: "list_issues", description: "List issues with optional filters and pagination"),
         include(name: "create_comment", description: "Create a comment on a Linear issue"),
-        include(name: "create_issue", description: "Create a new Linear issue")
+        include(name: "create_issue", description: "Create a new Linear issue"),
+        include(name: "update_issue", description: "Update an existing Linear issue")
       )
     end
   end
