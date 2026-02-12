@@ -4,6 +4,8 @@ require "toon"
 
 module LinearToonMcp
   module Tools
+    # Fetch a single Linear issue by ID or identifier and return it as TOON.
+    # Includes metadata, state, assignee, labels, project, team, and attachments.
     class GetIssue < MCP::Tool
       description "Retrieve a Linear issue by ID"
 

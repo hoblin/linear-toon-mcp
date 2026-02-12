@@ -5,7 +5,10 @@ require_relative "linear_toon_mcp/version"
 require_relative "linear_toon_mcp/client"
 require_relative "linear_toon_mcp/tools/get_issue"
 
+# Token-efficient MCP server for Linear. Wraps Linear's GraphQL API
+# and returns TOON-formatted responses for ~40-60% token savings.
 module LinearToonMcp
+  # Raised on Linear API HTTP errors, GraphQL errors, or missing data.
   class Error < StandardError; end
 
   # Build a configured MCP::Server with all registered tools.
