@@ -61,6 +61,10 @@ bundle exec rspec        # run tests
 bundle exec standardrb   # lint
 ```
 
+## Versioning
+
+Version `1.0.0` means feature parity with the official Linear MCP server. Until then, each new tool (or set of tools) bumps the minor version. The single source of truth is `lib/linear_toon_mcp/version.rb`.
+
 ## Releasing
 
 1. Update the version in `lib/linear_toon_mcp/version.rb`
