@@ -26,7 +26,7 @@ bundle exec standardrb --fix               # lint + autofix
 
 **Response pipeline:** Linear GraphQL response -> Ruby hash -> `Toon.encode(data)` -> `MCP::Tool::Response` with text content type.
 
-**Linear client (planned):** Plain `Net::HTTP` against `https://api.linear.app/graphql`. Auth via `LINEAR_API_KEY` env var. Hardcoded query strings, no GraphQL client gem.
+**Linear client:** `LinearToonMcp::Client` — plain `Net::HTTP` against `https://api.linear.app/graphql`. Auth via `LINEAR_API_KEY` env var. Hardcoded query strings, no GraphQL client gem. Injected into tools via `server_context: {client:}`.
 
 ## Key Dependencies
 
@@ -34,6 +34,10 @@ bundle exec standardrb --fix               # lint + autofix
 - `toon-ruby` (~> 0.1) — JSON-to-TOON serialization (`Toon.encode(data)`)
 - `standard` — linter (dev)
 - Ruby >= 3.2, toolchain managed by mise (Ruby 3.4)
+
+## Versioning
+
+Each new tool (or set of tools) bumps the minor version. Bump `lib/linear_toon_mcp/version.rb` when adding tools. Update the Tools table in README.md when adding or changing tools.
 
 ## Design Principles
 
@@ -44,6 +48,8 @@ bundle exec standardrb --fix               # lint + autofix
 - Minimal tool set and minimal GraphQL fields per query
 - Every response goes through TOON encoding
 - No heavy dependencies (no graphql-client gems)
+- Public gem — YARD docs required on all public interfaces
+- Tools must guard against nil API responses (e.g., issue not found)
 
 ## Skills
 
