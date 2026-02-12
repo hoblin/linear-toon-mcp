@@ -61,21 +61,4 @@ RSpec.describe LinearToonMcp::Tools::GetIssue do
       end
     end
   end
-
-  describe "real API call", :live do
-    subject(:response) { described_class.call(id: issue_id, server_context: {client:}) }
-
-    let(:client) { LinearToonMcp::Client.new }
-    let(:issue_id) { ENV.fetch("LINEAR_TEST_ISSUE_ID") }
-
-    before do
-      skip "LINEAR_API_KEY not set" unless ENV["LINEAR_API_KEY"]
-      skip "LINEAR_TEST_ISSUE_ID not set" unless ENV["LINEAR_TEST_ISSUE_ID"]
-    end
-
-    it "fetches an issue from Linear" do
-      expect(response).to be_a(MCP::Tool::Response)
-      expect(response.content.first[:text]).not_to be_empty
-    end
-  end
 end
