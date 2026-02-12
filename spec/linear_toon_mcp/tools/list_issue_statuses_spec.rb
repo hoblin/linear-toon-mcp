@@ -1,0 +1,104 @@
+# frozen_string_literal: true
+
+RSpec.describe LinearToonMcp::Tools::ListIssueStatuses do
+  describe ".call" do
+    subject(:response) { described_class.call(team:, server_context: {client:}) }
+
+    let(:client) { instance_double(LinearToonMcp::Client) }
+    let(:team) { "Engineering" }
+    let(:team_id) { "12345678-1234-1234-1234-123456789012" }
+    let(:states_data) do
+      {
+        "nodes" => [
+          {"id" => "state-1", "type" => "backlog", "name" => "Backlog"},
+          {"id" => "state-2", "type" => "unstarted", "name" => "Todo"},
+          {"id" => "state-3", "type" => "started", "name" => "In Progress"},
+          {"id" => "state-4", "type" => "completed", "name" => "Done"},
+          {"id" => "state-5", "type" => "canceled", "name" => "Canceled"}
+        ]
+      }
+    end
+
+    before do
+      allow(LinearToonMcp::Resolvers).to receive(:resolve_team).with(client, team).and_return(team_id)
+      allow(client).to receive(:query).and_return("workflowStates" => states_data)
+    end
+
+    it "resolves the team and queries workflow states" do
+      response
+      expect(LinearToonMcp::Resolvers).to have_received(:resolve_team).with(client, team)
+      expect(client).to have_received(:query).with(
+        described_class::QUERY,
+        variables: {filter: {team: {id: {eq: team_id}}}}
+      )
+    end
+
+    it "returns a TOON-encoded response" do
+      expect(response).to be_a(MCP::Tool::Response)
+      expect(response.content.first[:type]).to eq("text")
+      text = response.content.first[:text]
+      expect(text).to include("Backlog")
+      expect(text).to include("In Progress")
+      expect(text).to include("completed")
+    end
+
+    context "with team UUID" do
+      let(:team) { "12345678-1234-1234-1234-123456789012" }
+
+      before do
+        allow(LinearToonMcp::Resolvers).to receive(:resolve_team).with(client, team).and_return(team)
+      end
+
+      it "passes UUID through the resolver" do
+        response
+        expect(LinearToonMcp::Resolvers).to have_received(:resolve_team).with(client, team)
+      end
+    end
+
+    context "when team not found" do
+      before do
+        allow(LinearToonMcp::Resolvers).to receive(:resolve_team)
+          .and_raise(LinearToonMcp::Error, "Team not found: Missing")
+      end
+
+      let(:team) { "Missing" }
+
+      it "returns an error response" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Team not found")
+      end
+    end
+
+    context "when workflowStates field is nil" do
+      before do
+        allow(client).to receive(:query).and_return("workflowStates" => nil)
+      end
+
+      it "returns an error response" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Unexpected response")
+      end
+    end
+
+    context "when server_context has no client" do
+      subject(:response) { described_class.call(team: "Engineering", server_context: {}) }
+
+      it "returns an error response" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("client missing")
+      end
+    end
+
+    context "when the API returns an error" do
+      before do
+        allow(LinearToonMcp::Resolvers).to receive(:resolve_team).and_return(team_id)
+        allow(client).to receive(:query).and_raise(LinearToonMcp::Error, "HTTP 400: Bad request")
+      end
+
+      it "returns an error response with the message" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("HTTP 400")
+      end
+    end
+  end
+end
