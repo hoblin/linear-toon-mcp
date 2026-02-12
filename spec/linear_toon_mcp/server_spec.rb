@@ -24,7 +24,8 @@ RSpec.describe LinearToonMcp, ".server" do
 
     it "lists all tools" do
       expect(result[:result][:tools]).to contain_exactly(
-        include(name: "get_issue", description: "Retrieve a Linear issue by ID")
+        include(name: "get_issue", description: "Retrieve a Linear issue by ID"),
+        include(name: "list_issues", description: "List issues with optional filters and pagination")
       )
     end
   end
