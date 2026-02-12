@@ -47,6 +47,11 @@ claude mcp add -e LINEAR_API_KEY=lin_api_xxxxx linear-toon -- linear-toon-mcp
 | `get_issue` | Retrieve a Linear issue by ID or identifier (e.g., `LIN-123`). Returns issue details including title, description, state, assignee, labels, project, and attachments. |
 | `list_issues` | List issues with optional filters (team, assignee, state, label, priority, project, cycle) and cursor-based pagination. Supports name or UUID for most filters. |
 | `list_issue_statuses` | List available workflow states for a team. Returns status id, type (backlog/unstarted/started/completed/canceled), and name. Accepts team name or UUID. |
+| `list_teams` | List all teams in the workspace. Returns team id, name, and key. |
+| `list_users` | List users in the workspace, optionally scoped to a team. Returns user id, name, and email. |
+| `list_issue_labels` | List issue labels, optionally scoped to a team. Returns label id and name. |
+| `list_projects` | List projects, optionally scoped to a team. Returns project id, name, and state. |
+| `list_cycles` | List cycles for a team. Returns cycle id, name, number, startsAt, and endsAt. Requires team name or UUID. |
 | `create_issue` | Create a new Linear issue. Accepts human-friendly names for team, assignee, state, labels, project, cycle, and milestone (resolved to IDs automatically). Supports issue relations and link attachments. |
 | `update_issue` | Update an existing Linear issue by ID. Supports partial updates, null to remove fields, and relation replacement. |
 | `create_comment` | Create a comment on a Linear issue. Supports Markdown content and threaded replies via parentId. |
