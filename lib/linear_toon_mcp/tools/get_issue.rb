@@ -29,12 +29,21 @@ module LinearToonMcp
             title
             description
             priority
+            priorityLabel
             url
+            branchName
             createdAt
             updatedAt
+            archivedAt
+            completedAt
+            dueDate
             state { name }
-            assignee { name }
+            assignee { id name }
+            creator { id name }
             labels { nodes { name } }
+            project { id name }
+            team { id name }
+            attachments { nodes { id title url } }
           }
         }
       GRAPHQL
@@ -45,6 +54,8 @@ module LinearToonMcp
           data = client.query(QUERY, variables: {id:})
           text = Toon.encode(data["issue"])
           MCP::Tool::Response.new([{type: "text", text:}])
+        rescue Error => e
+          MCP::Tool::Response.new([{type: "text", text: e.message}], error: true)
         end
       end
     end

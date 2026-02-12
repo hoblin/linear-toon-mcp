@@ -13,12 +13,21 @@ RSpec.describe LinearToonMcp::Tools::GetIssue do
         "title" => "Fix the bug",
         "description" => "Something is broken",
         "priority" => 2,
+        "priorityLabel" => "High",
         "url" => "https://linear.app/test/issue/TEST-1",
+        "gitBranchName" => "alice/test-1-fix-the-bug",
         "createdAt" => "2026-01-01T00:00:00.000Z",
         "updatedAt" => "2026-01-02T00:00:00.000Z",
+        "archivedAt" => nil,
+        "completedAt" => nil,
+        "dueDate" => nil,
         "state" => {"name" => "In Progress"},
-        "assignee" => {"name" => "Alice"},
-        "labels" => {"nodes" => [{"name" => "bug"}]}
+        "assignee" => {"id" => "user-1", "name" => "Alice"},
+        "creator" => {"id" => "user-2", "name" => "Bob"},
+        "labels" => {"nodes" => [{"name" => "bug"}]},
+        "project" => {"id" => "proj-1", "name" => "My Project"},
+        "team" => {"id" => "team-1", "name" => "Engineering"},
+        "attachments" => {"nodes" => []}
       }
     end
 
