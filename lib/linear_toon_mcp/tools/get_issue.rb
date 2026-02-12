@@ -49,6 +49,9 @@ module LinearToonMcp
       GRAPHQL
 
       class << self
+        # @param id [String] Linear issue ID or identifier (e.g., "LIN-123")
+        # @param server_context [Hash, nil] must contain +:client+ key with a {Client}
+        # @return [MCP::Tool::Response] TOON-encoded issue or error
         def call(id:, server_context: nil)
           client = server_context&.dig(:client) or raise Error, "client missing from server_context"
           data = client.query(QUERY, variables: {id:})

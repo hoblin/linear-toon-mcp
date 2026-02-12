@@ -8,6 +8,9 @@ require_relative "linear_toon_mcp/tools/get_issue"
 module LinearToonMcp
   class Error < StandardError; end
 
+  # Build a configured MCP::Server with all registered tools.
+  # @param client [Client] Linear API client (defaults to new instance from ENV)
+  # @return [MCP::Server]
   def self.server(client: Client.new)
     MCP::Server.new(
       name: "linear-toon-mcp",
