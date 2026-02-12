@@ -94,6 +94,27 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       end
     end
 
+    context "with state but no team" do
+      let(:params) { {id: issue_id, state: "Done"} }
+
+      before do
+        allow(client).to receive(:query).with(described_class::ISSUE_TEAM_QUERY, variables: {id: issue_id})
+          .and_return("issue" => {"team" => {"id" => "fetched-team-uuid"}})
+        allow(LinearToonMcp::Resolvers).to receive(:resolve_state).with(client, "fetched-team-uuid", "Done").and_return("state-uuid")
+        allow(client).to receive(:query).with(described_class::MUTATION, anything)
+          .and_return("issueUpdate" => {"success" => true, "issue" => issue_data})
+      end
+
+      it "fetches issue team and resolves state" do
+        response
+        expect(client).to have_received(:query).with(described_class::ISSUE_TEAM_QUERY, variables: {id: issue_id})
+        expect(client).to have_received(:query).with(
+          described_class::MUTATION,
+          variables: {id: issue_id, input: hash_including(stateId: "state-uuid")}
+        )
+      end
+    end
+
     context "with relation replacement" do
       let(:params) { {id: issue_id, blocks: ["new-blocked"]} }
       let(:existing_relations) do

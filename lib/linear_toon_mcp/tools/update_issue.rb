@@ -74,6 +74,12 @@ module LinearToonMcp
         }
       GRAPHQL
 
+      ISSUE_TEAM_QUERY = <<~GRAPHQL
+        query($id: String!) {
+          issue(id: $id) { team { id } }
+        }
+      GRAPHQL
+
       RELATION_TYPE_MAP = {
         blockedBy: "isBlockedBy",
         blocks: "blocks",
@@ -90,7 +96,7 @@ module LinearToonMcp
           client = server_context&.dig(:client) or raise Error, "client missing from server_context"
 
           input = {}
-          team_id = resolve_team_id(client, kwargs)
+          team_id = resolve_team_id(client, id, kwargs)
           build_input(input, client, team_id, kwargs)
 
           data = client.query(MUTATION, variables: {id:, input:})
@@ -109,9 +115,16 @@ module LinearToonMcp
 
         private
 
-        def resolve_team_id(client, kwargs)
-          return unless kwargs.key?(:team)
-          Resolvers.resolve_team(client, kwargs[:team])
+        def resolve_team_id(client, issue_id, kwargs)
+          return Resolvers.resolve_team(client, kwargs[:team]) if kwargs.key?(:team)
+          return unless needs_team_id?(kwargs)
+
+          data = client.query(ISSUE_TEAM_QUERY, variables: {id: issue_id})
+          data.dig("issue", "team", "id") or raise Error, "Could not determine issue team"
+        end
+
+        def needs_team_id?(kwargs)
+          kwargs.key?(:state) || kwargs.key?(:cycle)
         end
 
         def build_input(input, client, team_id, kwargs)
@@ -125,7 +138,6 @@ module LinearToonMcp
            estimate: :estimate, dueDate: :dueDate}.each do |key, field|
             input[field] = kwargs[key] if kwargs.key?(key)
           end
-          input[:teamId] = kwargs[:team] if kwargs.key?(:team) && kwargs[:team]
         end
 
         def add_nullable_fields(input, client, kwargs)
