@@ -2,46 +2,68 @@
 
 RSpec.describe LinearToonMcp::Client do
   describe "#initialize" do
-    it "raises when API key is missing" do
+    it "raises when API key is nil" do
       expect { described_class.new(api_key: nil) }.to raise_error(ArgumentError, /LINEAR_API_KEY is required/)
     end
 
     it "raises when API key is empty" do
       expect { described_class.new(api_key: "") }.to raise_error(ArgumentError, /LINEAR_API_KEY is required/)
     end
+
+    it "accepts a valid API key" do
+      expect { described_class.new(api_key: "lin_api_test") }.not_to raise_error
+    end
   end
 
   describe "#query" do
     subject(:client) { described_class.new(api_key: "test_key") }
 
-    let(:success_body) { JSON.generate(data: {viewer: {id: "1", name: "Test"}}) }
-    let(:graphql_error_body) { JSON.generate(data: nil, errors: [{message: "Not found"}]) }
+    context "when the API returns a successful JSON response" do
+      it "returns the parsed data hash" do
+        stub_http(JSON.generate(data: {viewer: {id: "1"}}))
 
-    it "returns parsed data on success" do
-      stub_request(success_body)
-
-      result = client.query("{ viewer { id name } }")
-      expect(result).to eq("viewer" => {"id" => "1", "name" => "Test"})
+        expect(client.query("{ viewer { id } }")).to eq("viewer" => {"id" => "1"})
+      end
     end
 
-    it "raises on HTTP error" do
-      stub_request("Unauthorized", code: "401", message: "Unauthorized")
+    context "when the API returns HTTP error with GraphQL errors in body" do
+      it "raises with the GraphQL error messages" do
+        stub_http(JSON.generate(errors: [{message: "Cannot query field \"foo\""}]), code: "400")
 
-      expect { client.query("{ viewer { id } }") }.to raise_error(LinearToonMcp::Error, /HTTP 401/)
+        expect { client.query("{ foo }") }.to raise_error(LinearToonMcp::Error, /HTTP 400.*Cannot query field/)
+      end
     end
 
-    it "raises on GraphQL error" do
-      stub_request(graphql_error_body)
+    context "when the API returns HTTP error with non-JSON body" do
+      it "raises with the raw response body" do
+        stub_http("Unauthorized", code: "401")
 
-      expect { client.query("{ issue(id: \"bad\") { id } }") }.to raise_error(LinearToonMcp::Error, /GraphQL error: Not found/)
+        expect { client.query("{ viewer { id } }") }.to raise_error(LinearToonMcp::Error, /HTTP 401.*Unauthorized/)
+      end
+    end
+
+    context "when the API returns 200 with GraphQL errors" do
+      it "raises with the error messages" do
+        stub_http(JSON.generate(data: nil, errors: [{message: "Not found"}]))
+
+        expect { client.query("{ issue(id: \"x\") { id } }") }.to raise_error(LinearToonMcp::Error, /GraphQL error: Not found/)
+      end
+    end
+
+    context "when the API returns 200 with empty body" do
+      it "raises empty response error" do
+        stub_http("")
+
+        expect { client.query("{ viewer { id } }") }.to raise_error(LinearToonMcp::Error, /Empty response/)
+      end
     end
 
     private
 
-    def stub_request(body, code: "200", message: "OK")
-      http_response = Net::HTTPResponse::CODE_TO_OBJ[code].new("1.1", code, message)
-      allow(http_response).to receive(:body).and_return(body)
-      allow(Net::HTTP).to receive(:start).and_return(http_response)
+    def stub_http(body, code: "200")
+      response = Net::HTTPResponse::CODE_TO_OBJ[code].new("1.1", code, "")
+      allow(response).to receive(:body).and_return(body)
+      allow(Net::HTTP).to receive(:start).and_return(response)
     end
   end
 end

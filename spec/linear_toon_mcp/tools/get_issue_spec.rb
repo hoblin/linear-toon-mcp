@@ -15,7 +15,7 @@ RSpec.describe LinearToonMcp::Tools::GetIssue do
         "priority" => 2,
         "priorityLabel" => "High",
         "url" => "https://linear.app/test/issue/TEST-1",
-        "gitBranchName" => "alice/test-1-fix-the-bug",
+        "branchName" => "alice/test-1-fix-the-bug",
         "createdAt" => "2026-01-01T00:00:00.000Z",
         "updatedAt" => "2026-01-02T00:00:00.000Z",
         "archivedAt" => nil,
@@ -48,6 +48,17 @@ RSpec.describe LinearToonMcp::Tools::GetIssue do
         described_class::QUERY,
         variables: {id: "TEST-1"}
       )
+    end
+
+    context "when the API returns an error" do
+      before do
+        allow(client).to receive(:query).and_raise(LinearToonMcp::Error, "HTTP 400: Cannot query field")
+      end
+
+      it "returns an error response with the error message" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("HTTP 400")
+      end
     end
   end
 
