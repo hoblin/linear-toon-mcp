@@ -35,9 +35,19 @@ bundle exec standardrb --fix               # lint + autofix
 - `standard` — linter (dev)
 - Ruby >= 3.2, toolchain managed by mise (Ruby 3.4)
 
-## Versioning
+## Versioning & Releases
 
-Each new tool (or set of tools) bumps the minor version. Bump `lib/linear_toon_mcp/version.rb` when adding tools. Update the Tools table in README.md when adding or changing tools.
+Each new tool (or set of tools) bumps the minor version. Version `1.0.0` = feature parity with official Linear MCP server. When adding tools, always:
+
+1. Bump version in `lib/linear_toon_mcp/version.rb`
+2. Update the Tools table in `README.md`
+
+Release flow (after merging to main):
+
+1. Commit version bump: `git commit -am "Bump version to x.y.z"`
+2. Tag: `git tag vx.y.z`
+3. Push with tags: `git push origin main --tags`
+4. GitHub Actions publishes the gem to RubyGems.org via trusted publishing
 
 ## Design Principles
 
