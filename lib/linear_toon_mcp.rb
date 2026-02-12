@@ -3,7 +3,6 @@
 require "mcp"
 require_relative "linear_toon_mcp/version"
 require_relative "linear_toon_mcp/client"
-require_relative "linear_toon_mcp/tools/echo"
 require_relative "linear_toon_mcp/tools/get_issue"
 
 module LinearToonMcp
@@ -14,7 +13,7 @@ module LinearToonMcp
       name: "linear-toon-mcp",
       version: VERSION,
       description: "Manage Linear issues, projects, and teams",
-      tools: [Tools::Echo, Tools::GetIssue],
+      tools: [Tools::GetIssue],
       server_context: {client:}
     )
   end

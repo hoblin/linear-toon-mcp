@@ -24,21 +24,7 @@ RSpec.describe LinearToonMcp, ".server" do
 
     it "lists all tools" do
       expect(result[:result][:tools]).to contain_exactly(
-        include(name: "echo", description: "Accepts text input and returns it as-is"),
         include(name: "get_issue", description: "Retrieve a Linear issue by ID")
-      )
-    end
-  end
-
-  describe "tools/call" do
-    subject(:result) do
-      server.handle(jsonrpc: "2.0", id: 1, method: "tools/call",
-        params: {name: "echo", arguments: {text: "ping"}})
-    end
-
-    it "returns the echoed text" do
-      expect(result).to include(
-        result: include(content: [{type: "text", text: "ping"}])
       )
     end
   end
