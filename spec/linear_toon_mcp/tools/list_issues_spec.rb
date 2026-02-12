@@ -59,7 +59,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
         expect(client).to have_received(:query).with(
           described_class::QUERY,
           variables: hash_including(
-            filter: {team: {name: {eqCaseInsensitive: "Engineering"}}}
+            filter: {team: {name: {eqIgnoreCase: "Engineering"}}}
           )
         )
       end
@@ -129,7 +129,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
         expect(client).to have_received(:query).with(
           described_class::QUERY,
           variables: hash_including(
-            filter: {assignee: {name: {eqCaseInsensitive: "Alice"}}}
+            filter: {assignee: {name: {eqIgnoreCase: "Alice"}}}
           )
         )
       end
@@ -143,7 +143,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
         expect(client).to have_received(:query).with(
           described_class::QUERY,
           variables: hash_including(
-            filter: {project: {name: {eqCaseInsensitive: "My Project"}}}
+            filter: {project: {name: {eqIgnoreCase: "My Project"}}}
           )
         )
       end
@@ -157,7 +157,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
         expect(client).to have_received(:query).with(
           described_class::QUERY,
           variables: hash_including(
-            filter: {delegate: {name: {eqCaseInsensitive: "my-agent"}}}
+            filter: {delegate: {name: {eqIgnoreCase: "my-agent"}}}
           )
         )
       end
@@ -171,7 +171,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
         expect(client).to have_received(:query).with(
           described_class::QUERY,
           variables: hash_including(
-            filter: {state: {name: {eqCaseInsensitive: "In Progress"}}}
+            filter: {state: {name: {eqIgnoreCase: "In Progress"}}}
           )
         )
       end
@@ -185,7 +185,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
         expect(client).to have_received(:query).with(
           described_class::QUERY,
           variables: hash_including(
-            filter: {labels: {some: {name: {eqCaseInsensitive: "bug"}}}}
+            filter: {labels: {some: {name: {eqIgnoreCase: "bug"}}}}
           )
         )
       end
@@ -255,7 +255,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
         expect(client).to have_received(:query).with(
           described_class::QUERY,
           variables: hash_including(
-            filter: {cycle: {name: {eqCaseInsensitive: "Sprint 5"}}}
+            filter: {cycle: {name: {eqIgnoreCase: "Sprint 5"}}}
           )
         )
       end
@@ -397,8 +397,8 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
           described_class::QUERY,
           variables: hash_including(
             filter: {
-              team: {name: {eqCaseInsensitive: "Engineering"}},
-              state: {name: {eqCaseInsensitive: "In Progress"}},
+              team: {name: {eqIgnoreCase: "Engineering"}},
+              state: {name: {eqIgnoreCase: "In Progress"}},
               priority: {eq: 2}
             }
           )

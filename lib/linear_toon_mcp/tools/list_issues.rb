@@ -147,17 +147,17 @@ module LinearToonMcp
           return {isMe: {eq: true}} if value == "me"
           return {id: {eq: value}} if value.match?(UUID_RE)
           return {email: {eq: value}} if value.include?("@")
-          {name: {eqCaseInsensitive: value}}
+          {name: {eqIgnoreCase: value}}
         end
 
         def name_or_id(value)
-          value.match?(UUID_RE) ? {id: {eq: value}} : {name: {eqCaseInsensitive: value}}
+          value.match?(UUID_RE) ? {id: {eq: value}} : {name: {eqIgnoreCase: value}}
         end
 
         def cycle_filter(value)
           return {id: {eq: value}} if value.match?(UUID_RE)
           return {number: {eq: value.to_i}} if value.match?(NUMERIC_RE)
-          {name: {eqCaseInsensitive: value}}
+          {name: {eqIgnoreCase: value}}
         end
 
         def resolve_date(value)
