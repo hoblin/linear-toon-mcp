@@ -55,6 +55,17 @@ RSpec.describe LinearToonMcp::Tools::ListIssueStatuses do
       end
     end
 
+    context "when states list is empty" do
+      before do
+        allow(client).to receive(:query).and_return("workflowStates" => {"nodes" => []})
+      end
+
+      it "returns a TOON-encoded empty response" do
+        expect(response).to be_a(MCP::Tool::Response)
+        expect(response.content.first[:text]).not_to be_empty
+      end
+    end
+
     context "when team not found" do
       before do
         allow(LinearToonMcp::Resolvers).to receive(:resolve_team)
