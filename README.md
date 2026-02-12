@@ -1,5 +1,7 @@
 # linear-toon-mcp
 
+[![CI](https://github.com/hoblin/linear-toon-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/hoblin/linear-toon-mcp/actions/workflows/ci.yml)
+
 Lightweight MCP server for Linear that returns TOON-formatted responses for token-efficient LLM interactions.
 
 ## What is this?
@@ -55,7 +57,18 @@ Add to your MCP config (`.mcp.json` or Claude Code settings):
 git clone git@github.com:hoblin/linear-toon-mcp.git
 cd linear-toon-mcp
 bundle install
+bundle exec rspec        # run tests
+bundle exec standardrb   # lint
 ```
+
+## Releasing
+
+1. Update the version in `lib/linear_toon_mcp/version.rb`
+2. Commit: `git commit -am "Bump version to x.y.z"`
+3. Tag: `git tag vx.y.z`
+4. Push: `git push origin main --tags`
+
+The [release workflow](.github/workflows/release.yml) will run CI and publish the gem to RubyGems.org via [trusted publishing](https://guides.rubygems.org/trusted-publishing/).
 
 ## License
 
