@@ -107,6 +107,20 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
       end
     end
 
+    context "with assignee UUID" do
+      let(:params) { {assignee: "12345678-1234-1234-1234-123456789012"} }
+
+      it "builds ID filter" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {assignee: {id: {eq: "12345678-1234-1234-1234-123456789012"}}}
+          )
+        )
+      end
+    end
+
     context "with assignee name" do
       let(:params) { {assignee: "Alice"} }
 
@@ -116,6 +130,34 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
           described_class::QUERY,
           variables: hash_including(
             filter: {assignee: {name: {eqCaseInsensitive: "Alice"}}}
+          )
+        )
+      end
+    end
+
+    context "with project filter" do
+      let(:params) { {project: "My Project"} }
+
+      it "builds project name filter" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {project: {name: {eqCaseInsensitive: "My Project"}}}
+          )
+        )
+      end
+    end
+
+    context "with delegate filter" do
+      let(:params) { {delegate: "my-agent"} }
+
+      it "builds delegate name filter" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {delegate: {name: {eqCaseInsensitive: "my-agent"}}}
           )
         )
       end
@@ -186,6 +228,20 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
           described_class::QUERY,
           variables: hash_including(
             filter: {cycle: {number: {eq: 42}}}
+          )
+        )
+      end
+    end
+
+    context "with cycle UUID" do
+      let(:params) { {cycle: "12345678-1234-1234-1234-123456789012"} }
+
+      it "builds cycle ID filter" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {cycle: {id: {eq: "12345678-1234-1234-1234-123456789012"}}}
           )
         )
       end
@@ -316,12 +372,59 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
       end
     end
 
+    context "with updatedAt duration" do
+      let(:params) { {updatedAt: "-P30D"} }
+
+      it "resolves duration to ISO date" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: hash_including(
+              updatedAt: {gte: match(/\A\d{4}-\d{2}-\d{2}T/)}
+            )
+          )
+        )
+      end
+    end
+
+    context "with multiple filters" do
+      let(:params) { {team: "Engineering", state: "In Progress", priority: 2} }
+
+      it "combines all filters" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {
+              team: {name: {eqCaseInsensitive: "Engineering"}},
+              state: {name: {eqCaseInsensitive: "In Progress"}},
+              priority: {eq: 2}
+            }
+          )
+        )
+      end
+    end
+
     context "with invalid duration" do
       let(:params) { {createdAt: "-PINVALID"} }
 
       it "returns an error response" do
         expect(response).to be_a(MCP::Tool::Response).and be_error
         expect(response.content.first[:text]).to include("Invalid duration")
+      end
+    end
+
+    context "when issues list is empty" do
+      before do
+        allow(client).to receive(:query).and_return(
+          "issues" => {"nodes" => [], "pageInfo" => {"hasNextPage" => false, "endCursor" => nil}}
+        )
+      end
+
+      it "returns a TOON-encoded empty response" do
+        expect(response).to be_a(MCP::Tool::Response)
+        expect(response.content.first[:text]).not_to be_empty
       end
     end
 

@@ -65,6 +65,8 @@ module LinearToonMcp
 
       # @private
       UUID_RE = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/
+      # @private
+      NUMERIC_RE = /\A\d+\z/
 
       # standard:disable Naming/VariableName
       class << self
@@ -154,7 +156,7 @@ module LinearToonMcp
 
         def cycle_filter(value)
           return {id: {eq: value}} if value.match?(UUID_RE)
-          return {number: {eq: value.to_i}} if value.match?(/\A\d+\z/)
+          return {number: {eq: value.to_i}} if value.match?(NUMERIC_RE)
           {name: {eqCaseInsensitive: value}}
         end
 
