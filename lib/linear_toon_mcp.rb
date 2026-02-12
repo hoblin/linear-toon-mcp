@@ -3,6 +3,7 @@
 require "mcp"
 require_relative "linear_toon_mcp/version"
 require_relative "linear_toon_mcp/client"
+require_relative "linear_toon_mcp/resolvers"
 require_relative "linear_toon_mcp/tools/get_issue"
 require_relative "linear_toon_mcp/tools/list_issues"
 require_relative "linear_toon_mcp/tools/create_comment"

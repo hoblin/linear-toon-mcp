@@ -63,10 +63,8 @@ module LinearToonMcp
         }
       GRAPHQL
 
-      # @private
-      UUID_RE = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/
-      # @private
-      NUMERIC_RE = /\A\d+\z/
+      UUID_RE = Resolvers::UUID_RE
+      NUMERIC_RE = Resolvers::NUMERIC_RE
 
       # standard:disable Naming/VariableName
       class << self
