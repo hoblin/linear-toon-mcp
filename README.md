@@ -46,6 +46,9 @@ claude mcp add -e LINEAR_API_KEY=lin_api_xxxxx linear-toon -- linear-toon-mcp
 |------|-------------|
 | `get_issue` | Retrieve a Linear issue by ID or identifier (e.g., `LIN-123`). Returns issue details including title, description, state, assignee, labels, project, and attachments. |
 | `list_issues` | List issues with optional filters (team, assignee, state, label, priority, project, cycle) and cursor-based pagination. Supports name or UUID for most filters. |
+| `create_issue` | Create a new Linear issue. Accepts human-friendly names for team, assignee, state, labels, project, cycle, and milestone (resolved to IDs automatically). Supports issue relations and link attachments. |
+| `update_issue` | Update an existing Linear issue by ID. Supports partial updates, null to remove fields, and relation replacement. |
+| `create_comment` | Create a comment on a Linear issue. Supports Markdown content and threaded replies via parentId. |
 
 ## Development
 
