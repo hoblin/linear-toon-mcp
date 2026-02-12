@@ -2,17 +2,25 @@
 
 require "mcp"
 require_relative "linear_toon_mcp/version"
-require_relative "linear_toon_mcp/tools/echo"
+require_relative "linear_toon_mcp/client"
+require_relative "linear_toon_mcp/tools/get_issue"
 
+# Token-efficient MCP server for Linear. Wraps Linear's GraphQL API
+# and returns TOON-formatted responses for ~40-60% token savings.
 module LinearToonMcp
+  # Raised on Linear API HTTP errors, GraphQL errors, or missing data.
   class Error < StandardError; end
 
-  def self.server
+  # Build a configured MCP::Server with all registered tools.
+  # @param client [Client] Linear API client (defaults to new instance from ENV)
+  # @return [MCP::Server]
+  def self.server(client: Client.new)
     MCP::Server.new(
       name: "linear-toon-mcp",
       version: VERSION,
       description: "Manage Linear issues, projects, and teams",
-      tools: [Tools::Echo]
+      tools: [Tools::GetIssue],
+      server_context: {client:}
     )
   end
 end

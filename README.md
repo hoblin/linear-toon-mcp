@@ -36,20 +36,15 @@ Get your API key from [Linear Settings > API](https://linear.app/settings/api).
 
 ### Claude Code
 
-Add to your MCP config (`.mcp.json` or Claude Code settings):
-
-```json
-{
-  "mcpServers": {
-    "linear": {
-      "command": "linear-toon-mcp",
-      "env": {
-        "LINEAR_API_KEY": "lin_api_xxxxx"
-      }
-    }
-  }
-}
+```bash
+claude mcp add -e LINEAR_API_KEY=lin_api_xxxxx linear-toon -- linear-toon-mcp
 ```
+
+## Tools
+
+| Tool | Description |
+|------|-------------|
+| `get_issue` | Retrieve a Linear issue by ID or identifier (e.g., `LIN-123`). Returns issue details including title, description, state, assignee, labels, project, and attachments. |
 
 ## Development
 

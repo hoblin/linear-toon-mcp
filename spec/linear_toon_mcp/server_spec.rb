@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe LinearToonMcp, ".server" do
-  let(:server) { described_class.server }
+  let(:client) { instance_double(LinearToonMcp::Client) }
+  let(:server) { described_class.server(client:) }
 
   describe "initialize" do
     subject(:result) do
@@ -21,22 +22,9 @@ RSpec.describe LinearToonMcp, ".server" do
   describe "tools/list" do
     subject(:result) { server.handle(jsonrpc: "2.0", id: 1, method: "tools/list", params: {}) }
 
-    it "lists the echo tool" do
+    it "lists all tools" do
       expect(result[:result][:tools]).to contain_exactly(
-        include(name: "echo", description: "Accepts text input and returns it as-is")
-      )
-    end
-  end
-
-  describe "tools/call" do
-    subject(:result) do
-      server.handle(jsonrpc: "2.0", id: 1, method: "tools/call",
-        params: {name: "echo", arguments: {text: "ping"}})
-    end
-
-    it "returns the echoed text" do
-      expect(result).to include(
-        result: include(content: [{type: "text", text: "ping"}])
+        include(name: "get_issue", description: "Retrieve a Linear issue by ID")
       )
     end
   end
