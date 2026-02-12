@@ -7,7 +7,7 @@ module LinearToonMcp
     # List users in the Linear workspace, optionally scoped to a team.
     # Returns TOON-encoded array of users with id, name, and email.
     class ListUsers < MCP::Tool
-      description "List users in the workspace"
+      description "List users, optionally scoped to a team"
 
       annotations(
         read_only_hint: true,
@@ -17,7 +17,7 @@ module LinearToonMcp
 
       input_schema(
         properties: {
-          team: {type: "string", description: "Team name or ID (optional)"}
+          team: {type: "string", description: "Team name or ID"}
         },
         additionalProperties: false
       )

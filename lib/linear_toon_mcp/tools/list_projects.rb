@@ -7,7 +7,7 @@ module LinearToonMcp
     # List projects in the Linear workspace, optionally scoped to a team.
     # Returns TOON-encoded array of projects with id, name, and state.
     class ListProjects < MCP::Tool
-      description "List projects in the workspace"
+      description "List projects, optionally scoped to a team"
 
       annotations(
         read_only_hint: true,
@@ -17,7 +17,7 @@ module LinearToonMcp
 
       input_schema(
         properties: {
-          team: {type: "string", description: "Team name or ID (optional)"}
+          team: {type: "string", description: "Team name or ID"}
         },
         additionalProperties: false
       )

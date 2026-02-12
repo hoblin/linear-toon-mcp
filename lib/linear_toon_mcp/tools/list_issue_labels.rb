@@ -7,7 +7,7 @@ module LinearToonMcp
     # List issue labels in the Linear workspace, optionally scoped to a team.
     # Returns TOON-encoded array of labels with id and name.
     class ListIssueLabels < MCP::Tool
-      description "List issue labels in the workspace"
+      description "List issue labels, optionally scoped to a team"
 
       annotations(
         read_only_hint: true,
@@ -17,7 +17,7 @@ module LinearToonMcp
 
       input_schema(
         properties: {
-          team: {type: "string", description: "Team name or ID (optional)"}
+          team: {type: "string", description: "Team name or ID"}
         },
         additionalProperties: false
       )
