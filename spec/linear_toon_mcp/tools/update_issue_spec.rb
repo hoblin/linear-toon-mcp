@@ -190,6 +190,49 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       end
     end
 
+    context "with milestone but no project" do
+      let(:params) { {id: issue_id, milestone: "MVP"} }
+
+      it "returns an error about missing project" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("milestone requires project")
+      end
+    end
+
+    context "when relation deletion fails" do
+      let(:params) { {id: issue_id, blocks: ["new-blocked"]} }
+
+      before do
+        allow(client).to receive(:query).with(described_class::MUTATION, anything)
+          .and_return("issueUpdate" => {"success" => true, "issue" => issue_data})
+        allow(client).to receive(:query).with(described_class::RELATIONS_QUERY, anything)
+          .and_return("issue" => {"relations" => {"nodes" => [{"id" => "rel-1", "type" => "blocks", "relatedIssue" => {"id" => "old"}}]}})
+        allow(client).to receive(:query).with(described_class::RELATION_DELETE_MUTATION, anything)
+          .and_return("issueRelationDelete" => {"success" => false})
+      end
+
+      it "returns an error response" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Failed to delete blocks relation")
+      end
+    end
+
+    context "when link creation fails" do
+      let(:params) { {id: issue_id, links: [{"url" => "https://bad.example", "title" => "Bad"}]} }
+
+      before do
+        allow(client).to receive(:query).with(described_class::MUTATION, anything)
+          .and_return("issueUpdate" => {"success" => true, "issue" => issue_data})
+        allow(client).to receive(:query).with(LinearToonMcp::Tools::CreateIssue::LINK_MUTATION, anything)
+          .and_return("attachmentLinkURL" => {"success" => false})
+      end
+
+      it "returns an error response" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Failed to attach link")
+      end
+    end
+
     context "when mutation returns success: false" do
       before do
         allow(client).to receive(:query).and_return(

@@ -149,6 +149,47 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
       end
     end
 
+    context "with milestone but no project" do
+      let(:params) { {title: "New issue", team: team_id, milestone: "MVP"} }
+
+      it "returns an error about missing project" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("milestone requires project")
+      end
+    end
+
+    context "when relation creation fails" do
+      let(:params) { {title: "New issue", team: team_id, blockedBy: ["blocker-1"]} }
+
+      before do
+        allow(client).to receive(:query).with(described_class::MUTATION, anything)
+          .and_return("issueCreate" => {"success" => true, "issue" => issue_data})
+        allow(client).to receive(:query).with(described_class::RELATION_MUTATION, anything)
+          .and_return("issueRelationCreate" => {"success" => false})
+      end
+
+      it "returns an error response" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Failed to create isBlockedBy relation")
+      end
+    end
+
+    context "when link creation fails" do
+      let(:params) { {title: "New issue", team: team_id, links: [{"url" => "https://bad.example", "title" => "Bad"}]} }
+
+      before do
+        allow(client).to receive(:query).with(described_class::MUTATION, anything)
+          .and_return("issueCreate" => {"success" => true, "issue" => issue_data})
+        allow(client).to receive(:query).with(described_class::LINK_MUTATION, anything)
+          .and_return("attachmentLinkURL" => {"success" => false})
+      end
+
+      it "returns an error response" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Failed to attach link")
+      end
+    end
+
     context "when mutation returns success: false" do
       before do
         allow(client).to receive(:query).and_return(

@@ -161,9 +161,10 @@ module LinearToonMcp
           if kwargs.key?(:project) && kwargs[:project]
             project_id = Resolvers.resolve_project(client, kwargs[:project])
             input[:projectId] = project_id
-            if kwargs.key?(:milestone)
-              input[:projectMilestoneId] = Resolvers.resolve_milestone(client, project_id, kwargs[:milestone])
-            end
+          end
+          if kwargs.key?(:milestone)
+            raise Error, "milestone requires project" unless project_id
+            input[:projectMilestoneId] = Resolvers.resolve_milestone(client, project_id, kwargs[:milestone])
           end
           input[:cycleId] = Resolvers.resolve_cycle(client, team_id, kwargs[:cycle]) if kwargs.key?(:cycle) && team_id
         end
@@ -185,7 +186,9 @@ module LinearToonMcp
           relations = data.dig("issue", "relations", "nodes") || []
           relations.each do |rel|
             next unless rel["type"] == type
-            client.query(RELATION_DELETE_MUTATION, variables: {id: rel["id"]})
+            del = client.query(RELATION_DELETE_MUTATION, variables: {id: rel["id"]})
+            next if del.dig("issueRelationDelete", "success")
+            raise Error, "Failed to delete #{type} relation #{rel["id"]}"
           end
         end
 
@@ -194,7 +197,9 @@ module LinearToonMcp
 
           links.each do |link|
             vars = {url: link["url"], issueId: issue_id, title: link["title"]}
-            client.query(CreateIssue::LINK_MUTATION, variables: vars)
+            data = client.query(CreateIssue::LINK_MUTATION, variables: vars)
+            next if data.dig("attachmentLinkURL", "success")
+            raise Error, "Failed to attach link: #{link["url"]}"
           end
         end
       end

@@ -120,7 +120,8 @@ module LinearToonMcp
           project_id = Resolvers.resolve_project(client, project) if project
           input[:projectId] = project_id if project_id
           input[:cycleId] = Resolvers.resolve_cycle(client, team_id, cycle) if cycle
-          if milestone && project_id
+          if milestone
+            raise Error, "milestone requires project" unless project_id
             input[:projectMilestoneId] = Resolvers.resolve_milestone(client, project_id, milestone)
           end
         end
@@ -134,14 +135,18 @@ module LinearToonMcp
 
         def create_relation(client, issue_id, related_issue_id, type)
           input = {issueId: issue_id, relatedIssueId: related_issue_id, type:}
-          client.query(RELATION_MUTATION, variables: {input:})
+          data = client.query(RELATION_MUTATION, variables: {input:})
+          return if data.dig("issueRelationCreate", "success")
+          raise Error, "Failed to create #{type} relation with #{related_issue_id}"
         end
 
         def create_links(client, issue_id, links)
           return unless links
 
           links.each do |link|
-            client.query(LINK_MUTATION, variables: {url: link["url"], issueId: issue_id, title: link["title"]})
+            data = client.query(LINK_MUTATION, variables: {url: link["url"], issueId: issue_id, title: link["title"]})
+            next if data.dig("attachmentLinkURL", "success")
+            raise Error, "Failed to attach link: #{link["url"]}"
           end
         end
       end
