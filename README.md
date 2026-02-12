@@ -51,6 +51,12 @@ Add to your MCP config (`.mcp.json` or Claude Code settings):
 }
 ```
 
+## Tools
+
+| Tool | Description |
+|------|-------------|
+| `get_issue` | Retrieve a Linear issue by ID or identifier (e.g., `LIN-123`). Returns issue details including title, description, state, assignee, labels, project, and attachments. |
+
 ## Development
 
 ```bash
