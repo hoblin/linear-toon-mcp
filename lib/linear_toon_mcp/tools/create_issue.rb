@@ -80,6 +80,7 @@ module LinearToonMcp
         # @return [MCP::Tool::Response] TOON-encoded issue or error
         def call(title:, team:, server_context: nil, **kwargs)
           client = server_context&.dig(:client) or raise Error, "client missing from server_context"
+          raise Error, "Cannot specify both assignee and delegate" if kwargs.key?(:assignee) && kwargs.key?(:delegate)
 
           team_id = Resolvers.resolve_team(client, team)
           input = {title:, teamId: team_id}

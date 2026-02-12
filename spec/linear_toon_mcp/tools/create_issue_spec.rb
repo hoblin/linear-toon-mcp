@@ -114,6 +114,15 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
       end
     end
 
+    context "with both assignee and delegate" do
+      let(:params) { {title: "New issue", team: team_id, assignee: "Alice", delegate: "Bob"} }
+
+      it "returns an error about conflicting params" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Cannot specify both assignee and delegate")
+      end
+    end
+
     context "with blockedBy and blocks relations" do
       let(:params) { {title: "New issue", team: team_id, blockedBy: ["blocker-1"], blocks: ["blocked-1"], relatedTo: ["related-1"], duplicateOf: "dup-1"} }
 

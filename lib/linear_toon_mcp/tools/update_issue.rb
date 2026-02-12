@@ -12,7 +12,7 @@ module LinearToonMcp
       annotations(
         read_only_hint: false,
         destructive_hint: false,
-        idempotent_hint: true
+        idempotent_hint: false
       )
 
       # standard:disable Layout/LineLength
@@ -80,6 +80,18 @@ module LinearToonMcp
         }
       GRAPHQL
 
+      RELATION_MUTATION = <<~GRAPHQL
+        mutation($input: IssueRelationCreateInput!) {
+          issueRelationCreate(input: $input) { success }
+        }
+      GRAPHQL
+
+      LINK_MUTATION = <<~GRAPHQL
+        mutation($url: String!, $issueId: String!, $title: String) {
+          attachmentLinkURL(url: $url, issueId: $issueId, title: $title) { success }
+        }
+      GRAPHQL
+
       RELATION_TYPE_MAP = {
         blockedBy: "isBlockedBy",
         blocks: "blocks",
@@ -94,6 +106,7 @@ module LinearToonMcp
         # @return [MCP::Tool::Response] TOON-encoded issue or error
         def call(id:, server_context: nil, **kwargs)
           client = server_context&.dig(:client) or raise Error, "client missing from server_context"
+          raise Error, "Cannot specify both assignee and delegate" if kwargs.key?(:assignee) && kwargs.key?(:delegate)
 
           input = {}
           team_id = resolve_team_id(client, id, kwargs)
@@ -151,13 +164,10 @@ module LinearToonMcp
         end
 
         def add_resolved_fields(input, client, team_id, kwargs)
-          if kwargs.key?(:team) && kwargs[:team]
-            input[:teamId] = Resolvers.resolve_team(client, kwargs[:team])
-          end
-          if kwargs.key?(:state) && team_id
-            input[:stateId] = Resolvers.resolve_state(client, team_id, kwargs[:state])
-          end
+          input[:teamId] = team_id if kwargs.key?(:team) && team_id
+          input[:stateId] = Resolvers.resolve_state(client, team_id, kwargs[:state]) if kwargs.key?(:state) && team_id
           input[:labelIds] = Resolvers.resolve_labels(client, kwargs[:labels]) if kwargs.key?(:labels)
+          project_id = nil
           if kwargs.key?(:project) && kwargs[:project]
             project_id = Resolvers.resolve_project(client, kwargs[:project])
             input[:projectId] = project_id
@@ -176,7 +186,9 @@ module LinearToonMcp
             delete_existing_relations(client, issue_id, type)
             values.each do |related_id|
               input = {issueId: issue_id, relatedIssueId: related_id, type:}
-              client.query(CreateIssue::RELATION_MUTATION, variables: {input:})
+              data = client.query(RELATION_MUTATION, variables: {input:})
+              next if data.dig("issueRelationCreate", "success")
+              raise Error, "Failed to create #{type} relation with #{related_id}"
             end
           end
         end
@@ -197,7 +209,7 @@ module LinearToonMcp
 
           links.each do |link|
             vars = {url: link["url"], issueId: issue_id, title: link["title"]}
-            data = client.query(CreateIssue::LINK_MUTATION, variables: vars)
+            data = client.query(LINK_MUTATION, variables: vars)
             next if data.dig("attachmentLinkURL", "success")
             raise Error, "Failed to attach link: #{link["url"]}"
           end

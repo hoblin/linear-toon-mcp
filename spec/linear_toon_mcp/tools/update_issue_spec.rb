@@ -140,7 +140,7 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
         expect(client).to have_received(:query).with(described_class::RELATIONS_QUERY, variables: {id: issue_id})
         expect(client).to have_received(:query).with(described_class::RELATION_DELETE_MUTATION, variables: {id: "rel-1"})
         expect(client).to have_received(:query).with(
-          LinearToonMcp::Tools::CreateIssue::RELATION_MUTATION,
+          described_class::RELATION_MUTATION,
           variables: {input: {issueId: issue_id, relatedIssueId: "new-blocked", type: "blocks"}}
         )
       end
@@ -184,9 +184,36 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       it "creates link attachments" do
         response
         expect(client).to have_received(:query).with(
-          LinearToonMcp::Tools::CreateIssue::LINK_MUTATION,
+          described_class::LINK_MUTATION,
           variables: {url: "https://example.com", issueId: issue_id, title: "Example"}
         )
+      end
+    end
+
+    context "with both assignee and delegate" do
+      let(:params) { {id: issue_id, assignee: "Alice", delegate: "Bob"} }
+
+      it "returns an error about conflicting params" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Cannot specify both assignee and delegate")
+      end
+    end
+
+    context "when relation creation fails during replacement" do
+      let(:params) { {id: issue_id, blocks: ["new-blocked"]} }
+
+      before do
+        allow(client).to receive(:query).with(described_class::MUTATION, anything)
+          .and_return("issueUpdate" => {"success" => true, "issue" => issue_data})
+        allow(client).to receive(:query).with(described_class::RELATIONS_QUERY, anything)
+          .and_return("issue" => {"relations" => {"nodes" => []}})
+        allow(client).to receive(:query).with(described_class::RELATION_MUTATION, anything)
+          .and_return("issueRelationCreate" => {"success" => false})
+      end
+
+      it "returns an error response" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Failed to create blocks relation")
       end
     end
 
@@ -223,7 +250,7 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       before do
         allow(client).to receive(:query).with(described_class::MUTATION, anything)
           .and_return("issueUpdate" => {"success" => true, "issue" => issue_data})
-        allow(client).to receive(:query).with(LinearToonMcp::Tools::CreateIssue::LINK_MUTATION, anything)
+        allow(client).to receive(:query).with(described_class::LINK_MUTATION, anything)
           .and_return("attachmentLinkURL" => {"success" => false})
       end
 
