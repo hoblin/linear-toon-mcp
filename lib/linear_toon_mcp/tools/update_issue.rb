@@ -93,7 +93,6 @@ module LinearToonMcp
       GRAPHQL
 
       RELATION_TYPE_MAP = {
-        blockedBy: "isBlockedBy",
         blocks: "blocks",
         relatedTo: "related",
         duplicateOf: "duplicate"
@@ -190,6 +189,16 @@ module LinearToonMcp
               next if data.dig("issueRelationCreate", "success")
               raise Error, "Failed to create #{type} relation with #{related_id}"
             end
+          end
+          replace_blocked_by_relations(client, issue_id, kwargs[:blockedBy]) if kwargs.key?(:blockedBy)
+        end
+
+        def replace_blocked_by_relations(client, issue_id, blocker_ids)
+          Array(blocker_ids).each do |blocker_id|
+            input = {issueId: blocker_id, relatedIssueId: issue_id, type: "blocks"}
+            data = client.query(RELATION_MUTATION, variables: {input:})
+            next if data.dig("issueRelationCreate", "success")
+            raise Error, "Failed to create blocks relation from #{blocker_id}"
           end
         end
 

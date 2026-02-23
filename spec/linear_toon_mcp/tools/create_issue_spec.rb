@@ -135,7 +135,7 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
 
       it "creates relations after issue creation" do
         response
-        expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "blocker-1", type: "isBlockedBy"}})
+        expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "blocker-1", relatedIssueId: "issue-uuid", type: "blocks"}})
         expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "blocked-1", type: "blocks"}})
         expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "related-1", type: "related"}})
         expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "dup-1", type: "duplicate"}})
@@ -179,7 +179,7 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
 
       it "returns an error response" do
         expect(response).to be_a(MCP::Tool::Response).and be_error
-        expect(response.content.first[:text]).to include("Failed to create isBlockedBy relation")
+        expect(response.content.first[:text]).to include("Failed to create blocks relation")
       end
     end
 

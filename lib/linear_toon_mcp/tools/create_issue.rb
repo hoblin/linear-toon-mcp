@@ -128,17 +128,17 @@ module LinearToonMcp
         end
 
         def create_relations(client, issue_id, blockedBy: nil, blocks: nil, relatedTo: nil, duplicateOf: nil, **)
-          Array(blockedBy).each { |id| create_relation(client, issue_id, id, "isBlockedBy") }
+          Array(blockedBy).each { |id| create_relation(client, id, issue_id, "blocks") }
           Array(blocks).each { |id| create_relation(client, issue_id, id, "blocks") }
           Array(relatedTo).each { |id| create_relation(client, issue_id, id, "related") }
           create_relation(client, issue_id, duplicateOf, "duplicate") if duplicateOf
         end
 
-        def create_relation(client, issue_id, related_issue_id, type)
-          input = {issueId: issue_id, relatedIssueId: related_issue_id, type:}
+        def create_relation(client, from_issue_id, to_issue_id, type)
+          input = {issueId: from_issue_id, relatedIssueId: to_issue_id, type:}
           data = client.query(RELATION_MUTATION, variables: {input:})
           return if data.dig("issueRelationCreate", "success")
-          raise Error, "Failed to create #{type} relation with #{related_issue_id}"
+          raise Error, "Failed to create #{type} relation with #{to_issue_id}"
         end
 
         def create_links(client, issue_id, links)
