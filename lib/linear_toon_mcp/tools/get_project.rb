@@ -30,6 +30,9 @@ module LinearToonMcp
         id
         name
         slugId
+        icon
+        color
+        summary
         url
         description
         state
@@ -44,7 +47,10 @@ module LinearToonMcp
         scope
         completedScopeHistory
         lead { id name }
+        status { id name }
         teams { nodes { id name } }
+        labels { nodes { id name } }
+        initiatives { nodes { id name } }
       GRAPHQL
 
       MEMBERS_FIELDS = "members { nodes { id name email } }"
