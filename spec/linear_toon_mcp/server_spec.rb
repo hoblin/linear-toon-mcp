@@ -7,7 +7,7 @@ RSpec.describe LinearToonMcp, ".server" do
   describe "initialize" do
     subject(:result) do
       server.handle(jsonrpc: "2.0", id: 1, method: "initialize",
-        params: {protocolVersion: "2024-11-05", capabilities: {}, clientInfo: {name: "test"}})
+        params: {protocolVersion: MCP::Configuration::LATEST_STABLE_PROTOCOL_VERSION, capabilities: {}, clientInfo: {name: "test"}})
     end
 
     it "returns server info in handshake response" do
@@ -32,6 +32,7 @@ RSpec.describe LinearToonMcp, ".server" do
         include(name: "list_issue_labels", description: "List issue labels, optionally scoped to a team"),
         include(name: "list_projects", description: "List projects, optionally scoped to a team"),
         include(name: "list_cycles", description: "List cycles for a team"),
+        include(name: "get_project", description: "Retrieve details of a specific project in Linear"),
         include(name: "create_comment", description: "Create a comment on a Linear issue"),
         include(name: "create_issue", description: "Create a new Linear issue"),
         include(name: "update_issue", description: "Update an existing Linear issue")

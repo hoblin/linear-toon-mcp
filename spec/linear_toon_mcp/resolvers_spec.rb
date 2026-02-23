@@ -105,7 +105,17 @@ RSpec.describe LinearToonMcp::Resolvers do
       expect(described_class.resolve_project(client, "My Project")).to eq("proj-uuid")
     end
 
-    it "raises when project not found" do
+    it "falls back to slug when name not found" do
+      allow(client).to receive(:query)
+        .and_return({"projects" => {"nodes" => []}}, {"projects" => {"nodes" => [{"id" => "proj-uuid"}]}})
+      expect(described_class.resolve_project(client, "my-project")).to eq("proj-uuid")
+      expect(client).to have_received(:query).with(
+        anything,
+        variables: {filter: {slugId: {eqIgnoreCase: "my-project"}}}
+      )
+    end
+
+    it "raises when project not found by name or slug" do
       allow(client).to receive(:query).and_return("projects" => {"nodes" => []})
       expect { described_class.resolve_project(client, "Missing") }.to raise_error(LinearToonMcp::Error, /Project not found/)
     end
