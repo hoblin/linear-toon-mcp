@@ -52,6 +52,7 @@ claude mcp add linear-toon -e LINEAR_API_KEY=lin_api_xxxxx -- linear-toon-mcp
 | `list_issue_labels` | List issue labels, optionally scoped to a team. Returns label id and name. |
 | `list_projects` | List projects, optionally scoped to a team. Returns project id, name, and state. |
 | `list_cycles` | List cycles for a team. Returns cycle id, name, number, startsAt, and endsAt. Requires team name or UUID. |
+| `get_project` | Retrieve a specific project by name, ID, or slug. Returns project details including state, priority, dates, progress, and lead. Optional includes for members, milestones, and resources. |
 | `create_issue` | Create a new Linear issue. Accepts human-friendly names for team, assignee, state, labels, project, cycle, and milestone (resolved to IDs automatically). Supports issue relations and link attachments. |
 | `update_issue` | Update an existing Linear issue by ID. Supports partial updates, null to remove fields, and relation replacement. |
 | `create_comment` | Create a comment on a Linear issue. Supports Markdown content and threaded replies via parentId. |
