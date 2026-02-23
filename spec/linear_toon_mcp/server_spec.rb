@@ -7,7 +7,7 @@ RSpec.describe LinearToonMcp, ".server" do
   describe "initialize" do
     subject(:result) do
       server.handle(jsonrpc: "2.0", id: 1, method: "initialize",
-        params: {protocolVersion: "2024-11-05", capabilities: {}, clientInfo: {name: "test"}})
+        params: {protocolVersion: MCP::Configuration::LATEST_STABLE_PROTOCOL_VERSION, capabilities: {}, clientInfo: {name: "test"}})
     end
 
     it "returns server info in handshake response" do
