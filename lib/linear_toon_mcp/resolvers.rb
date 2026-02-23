@@ -110,12 +110,18 @@ module LinearToonMcp
     end
 
     # @param client [Client]
-    # @param value [String] project UUID or name
+    # @param value [String] project UUID, name, or slug
     # @return [String] project UUID
     # @raise [Error] when project not found
     def resolve_project(client, value)
       return value if value.match?(UUID_RE)
+
+      # Try name first, then slug
       data = client.query(PROJECT_QUERY, variables: {filter: {name: {eqIgnoreCase: value}}})
+      id = data.dig("projects", "nodes", 0, "id")
+      return id if id
+
+      data = client.query(PROJECT_QUERY, variables: {filter: {slugId: {eqIgnoreCase: value}}})
       data.dig("projects", "nodes", 0, "id") or raise Error, "Project not found: #{value}"
     end
 

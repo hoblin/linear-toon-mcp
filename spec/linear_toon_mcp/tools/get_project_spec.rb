@@ -65,6 +65,19 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
       end
     end
 
+    context "with slug query" do
+      let(:query) { "my-project" }
+
+      before do
+        allow(LinearToonMcp::Resolvers).to receive(:resolve_project).with(client, "my-project").and_return(project_id)
+      end
+
+      it "resolves slug through resolver" do
+        response
+        expect(LinearToonMcp::Resolvers).to have_received(:resolve_project).with(client, "my-project")
+      end
+    end
+
     context "when includeMembers is true" do
       let(:options) { {includeMembers: true} }
       let(:project_data) do
@@ -115,11 +128,9 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
       it "includes documents and links in the query" do
         response
         expect(client).to have_received(:query).with(
-          a_string_matching(/documents \{ nodes \{ id title \} \}/),
-          variables: {id: project_id}
-        )
-        expect(client).to have_received(:query).with(
-          a_string_matching(/links \{ nodes \{ id url label \} \}/),
+          a_string_matching(/documents \{ nodes \{ id title \} \}/).and(
+            a_string_matching(/links \{ nodes \{ id url label \} \}/)
+          ),
           variables: {id: project_id}
         )
       end
@@ -143,16 +154,10 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
 
       it "includes all optional fields in the query" do
         response
-        query_string = client.as_null_object
-        allow(client).to receive(:query) do |q, **_|
-          query_string = q
-          {"project" => project_data}
-        end
-        described_class.call(query:, server_context: {client:}, **options)
-        expect(query_string).to include("members")
-        expect(query_string).to include("projectMilestones")
-        expect(query_string).to include("documents")
-        expect(query_string).to include("links")
+        expect(client).to have_received(:query).with(
+          a_string_including("members", "projectMilestones", "documents", "links"),
+          variables: {id: project_id}
+        )
       end
     end
 
