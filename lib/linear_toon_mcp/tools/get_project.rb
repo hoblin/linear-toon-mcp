@@ -32,7 +32,6 @@ module LinearToonMcp
         slugId
         icon
         color
-        summary
         url
         description
         state
