@@ -119,25 +119,19 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
     context "when includeResources is true" do
       let(:options) { {includeResources: true} }
       let(:project_data) do
-        super().merge(
-          "documents" => {"nodes" => [{"id" => "doc-1", "title" => "Design Doc"}]},
-          "links" => {"nodes" => [{"id" => "link-1", "url" => "https://example.com", "label" => "Example"}]}
-        )
+        super().merge("documents" => {"nodes" => [{"id" => "doc-1", "title" => "Design Doc"}]})
       end
 
-      it "includes documents and links in the query" do
+      it "includes documents in the query" do
         response
         expect(client).to have_received(:query).with(
-          a_string_matching(/documents \{ nodes \{ id title \} \}/).and(
-            a_string_matching(/links \{ nodes \{ id url label \} \}/)
-          ),
+          a_string_matching(/documents \{ nodes \{ id title \} \}/),
           variables: {id: project_id}
         )
       end
 
-      it "returns resources in response" do
+      it "returns documents in response" do
         expect(response.content.first[:text]).to include("Design Doc")
-        expect(response.content.first[:text]).to include("https://example.com")
       end
     end
 
@@ -147,15 +141,14 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
         super().merge(
           "members" => {"nodes" => [{"id" => "user-1", "name" => "Alice", "email" => "alice@test.com"}]},
           "projectMilestones" => {"nodes" => [{"id" => "ms-1", "name" => "MVP", "targetDate" => "2026-03-01"}]},
-          "documents" => {"nodes" => [{"id" => "doc-1", "title" => "Design Doc"}]},
-          "links" => {"nodes" => []}
+          "documents" => {"nodes" => [{"id" => "doc-1", "title" => "Design Doc"}]}
         )
       end
 
       it "includes all optional fields in the query" do
         response
         expect(client).to have_received(:query).with(
-          a_string_including("members", "projectMilestones", "documents", "links"),
+          a_string_including("members", "projectMilestones", "documents"),
           variables: {id: project_id}
         )
       end

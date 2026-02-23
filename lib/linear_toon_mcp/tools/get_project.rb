@@ -20,7 +20,7 @@ module LinearToonMcp
           query: {type: "string", description: "Project name, ID, or slug"},
           includeMembers: {type: "boolean", description: "Include project members (default: false)"},
           includeMilestones: {type: "boolean", description: "Include milestones (default: false)"},
-          includeResources: {type: "boolean", description: "Include resources (documents, links, attachments) (default: false)"}
+          includeResources: {type: "boolean", description: "Include resources (documents) (default: false)"}
         },
         required: ["query"],
         additionalProperties: false
@@ -49,17 +49,14 @@ module LinearToonMcp
 
       MEMBERS_FIELDS = "members { nodes { id name email } }"
       MILESTONES_FIELDS = "projectMilestones { nodes { id name targetDate } }"
-      RESOURCES_FIELDS = <<~GRAPHQL.strip
-        documents { nodes { id title } }
-        links { nodes { id url label } }
-      GRAPHQL
+      RESOURCES_FIELDS = "documents { nodes { id title } }"
 
       # standard:disable Naming/VariableName
       class << self
         # @param query [String] Project ID, name, or slug
         # @param includeMembers [Boolean] Include project members
         # @param includeMilestones [Boolean] Include project milestones
-        # @param includeResources [Boolean] Include documents, links, attachments
+        # @param includeResources [Boolean] Include documents
         # @param server_context [Hash, nil] must contain +:client+ key with a {Client}
         # @return [MCP::Tool::Response] TOON-encoded project or error
         def call(query:, includeMembers: false, includeMilestones: false, includeResources: false, server_context: nil)
