@@ -31,7 +31,7 @@ module LinearToonMcp
           estimate: {type: "number", description: "Issue estimate value"},
           dueDate: {type: "string", description: "Due date (ISO format)"},
           parentId: {type: "string", description: "Parent issue ID"},
-          blocks: {type: "array", items: {type: "string"}, description: "Issue IDs this blocks. To mark this issue as blocked by another, call update_issue on the blocker with blocks: [this_issue_id]"},
+          blocks: {type: "array", items: {type: "string"}, description: "Issue IDs/identifiers this blocks"},
           relatedTo: {type: "array", items: {type: "string"}, description: "Related issue IDs/identifiers"},
           duplicateOf: {type: "string", description: "Duplicate of issue ID/identifier"},
           milestone: {type: "string", description: "Milestone name or ID"},
