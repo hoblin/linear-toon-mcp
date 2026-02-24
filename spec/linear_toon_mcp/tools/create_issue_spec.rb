@@ -123,8 +123,8 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
       end
     end
 
-    context "with blockedBy and blocks relations" do
-      let(:params) { {title: "New issue", team: team_id, blockedBy: ["blocker-1"], blocks: ["blocked-1"], relatedTo: ["related-1"], duplicateOf: "dup-1"} }
+    context "with blocks and other relations" do
+      let(:params) { {title: "New issue", team: team_id, blocks: ["blocked-1"], relatedTo: ["related-1"], duplicateOf: "dup-1"} }
 
       before do
         allow(client).to receive(:query).and_return(
@@ -135,7 +135,6 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
 
       it "creates relations after issue creation" do
         response
-        expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "blocker-1", type: "isBlockedBy"}})
         expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "blocked-1", type: "blocks"}})
         expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "related-1", type: "related"}})
         expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "dup-1", type: "duplicate"}})
@@ -168,7 +167,7 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
     end
 
     context "when relation creation fails" do
-      let(:params) { {title: "New issue", team: team_id, blockedBy: ["blocker-1"]} }
+      let(:params) { {title: "New issue", team: team_id, blocks: ["blocked-1"]} }
 
       before do
         allow(client).to receive(:query).with(described_class::MUTATION, anything)
@@ -179,7 +178,7 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
 
       it "returns an error response" do
         expect(response).to be_a(MCP::Tool::Response).and be_error
-        expect(response.content.first[:text]).to include("Failed to create isBlockedBy relation")
+        expect(response.content.first[:text]).to include("Failed to create blocks relation")
       end
     end
 

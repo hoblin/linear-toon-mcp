@@ -31,7 +31,6 @@ module LinearToonMcp
           estimate: {type: "number", description: "Issue estimate value"},
           dueDate: {type: "string", description: "Due date (ISO format)"},
           parentId: {type: "string", description: "Parent issue ID"},
-          blockedBy: {type: "array", items: {type: "string"}, description: "Issue IDs/identifiers blocking this"},
           blocks: {type: "array", items: {type: "string"}, description: "Issue IDs/identifiers this blocks"},
           relatedTo: {type: "array", items: {type: "string"}, description: "Related issue IDs/identifiers"},
           duplicateOf: {type: "string", description: "Duplicate of issue ID/identifier"},
@@ -127,8 +126,7 @@ module LinearToonMcp
           end
         end
 
-        def create_relations(client, issue_id, blockedBy: nil, blocks: nil, relatedTo: nil, duplicateOf: nil, **)
-          Array(blockedBy).each { |id| create_relation(client, issue_id, id, "isBlockedBy") }
+        def create_relations(client, issue_id, blocks: nil, relatedTo: nil, duplicateOf: nil, **)
           Array(blocks).each { |id| create_relation(client, issue_id, id, "blocks") }
           Array(relatedTo).each { |id| create_relation(client, issue_id, id, "related") }
           create_relation(client, issue_id, duplicateOf, "duplicate") if duplicateOf
