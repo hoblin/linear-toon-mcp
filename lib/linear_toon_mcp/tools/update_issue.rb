@@ -31,8 +31,7 @@ module LinearToonMcp
           estimate: {type: "number", description: "Issue estimate value"},
           dueDate: {type: "string", description: "Due date (ISO format)"},
           parentId: {type: ["string", "null"], description: "Parent issue ID. Null to remove"},
-          blockedBy: {type: "array", items: {type: "string"}, description: "Issue IDs blocking this. Replaces existing; omit to keep unchanged"},
-          blocks: {type: "array", items: {type: "string"}, description: "Issue IDs this blocks. Replaces existing; omit to keep unchanged"},
+          blocks: {type: "array", items: {type: "string"}, description: "Issue IDs this blocks. Replaces existing; omit to keep unchanged. To mark this issue as blocked by another, call update_issue on the blocker with blocks: [this_issue_id]"},
           relatedTo: {type: "array", items: {type: "string"}, description: "Related issue IDs. Replaces existing; omit to keep unchanged"},
           duplicateOf: {type: ["string", "null"], description: "Duplicate of issue ID. Null to remove"},
           milestone: {type: "string", description: "Milestone name or ID"},
@@ -93,7 +92,6 @@ module LinearToonMcp
       GRAPHQL
 
       RELATION_TYPE_MAP = {
-        blockedBy: "isBlockedBy",
         blocks: "blocks",
         relatedTo: "related",
         duplicateOf: "duplicate"
