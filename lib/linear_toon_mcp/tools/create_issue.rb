@@ -92,16 +92,31 @@ module LinearToonMcp
           raise Error, "Issue creation failed" unless result["success"]
 
           issue = result["issue"]
-          create_relations(client, issue["id"], **kwargs)
-          create_links(client, issue["id"], kwargs[:links])
+          warnings = post_create(client, issue["id"], **kwargs)
 
           text = Toon.encode(issue)
+          text += "\nWARNING (issue was created): #{warnings.join("; ")}" if warnings.any?
           MCP::Tool::Response.new([{type: "text", text:}])
         rescue Error => e
           MCP::Tool::Response.new([{type: "text", text: e.message}], error: true)
         end
 
         private
+
+        def post_create(client, issue_id, links: nil, **kwargs)
+          warnings = []
+          begin
+            create_relations(client, issue_id, **kwargs)
+          rescue Error => e
+            warnings << e.message
+          end
+          begin
+            create_links(client, issue_id, links)
+          rescue Error => e
+            warnings << e.message
+          end
+          warnings
+        end
 
         def add_direct_fields(input, description: nil, priority: nil, estimate: nil,
           dueDate: nil, parentId: nil, **)

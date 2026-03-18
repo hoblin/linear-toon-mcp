@@ -176,8 +176,10 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
           .and_return("issueRelationCreate" => {"success" => false})
       end
 
-      it "returns an error response" do
-        expect(response).to be_a(MCP::Tool::Response).and be_error
+      it "returns issue data with a warning" do
+        expect(response).not_to be_error
+        expect(response.content.first[:text]).to include("TEST-1")
+        expect(response.content.first[:text]).to include("WARNING (issue was created)")
         expect(response.content.first[:text]).to include("Failed to create blocks relation")
       end
     end
@@ -192,8 +194,10 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
           .and_return("attachmentLinkURL" => {"success" => false})
       end
 
-      it "returns an error response" do
-        expect(response).to be_a(MCP::Tool::Response).and be_error
+      it "returns issue data with a warning" do
+        expect(response).not_to be_error
+        expect(response.content.first[:text]).to include("TEST-1")
+        expect(response.content.first[:text]).to include("WARNING (issue was created)")
         expect(response.content.first[:text]).to include("Failed to attach link")
       end
     end
