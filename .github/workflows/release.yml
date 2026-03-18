@@ -23,3 +23,8 @@ jobs:
       - run: gem install openssl
       - run: bundle install
       - uses: rubygems/release-gem@v1
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" --generate-notes

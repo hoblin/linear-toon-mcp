@@ -115,16 +115,31 @@ module LinearToonMcp
           raise Error, "Issue update failed" unless result["success"]
 
           issue = result["issue"]
-          replace_relations(client, id, kwargs)
-          create_links(client, id, kwargs[:links])
+          warnings = post_update(client, id, **kwargs)
 
           text = Toon.encode(issue)
+          text += "\nWARNING (issue was updated): #{warnings.join("; ")}" if warnings.any?
           MCP::Tool::Response.new([{type: "text", text:}])
         rescue Error => e
           MCP::Tool::Response.new([{type: "text", text: e.message}], error: true)
         end
 
         private
+
+        def post_update(client, issue_id, links: nil, **kwargs)
+          warnings = []
+          begin
+            replace_relations(client, issue_id, kwargs)
+          rescue Error => e
+            warnings << e.message
+          end
+          begin
+            create_links(client, issue_id, links)
+          rescue Error => e
+            warnings << e.message
+          end
+          warnings
+        end
 
         def resolve_team_id(client, issue_id, kwargs)
           return Resolvers.resolve_team(client, kwargs[:team]) if kwargs.key?(:team)
@@ -206,10 +221,10 @@ module LinearToonMcp
           return unless links
 
           links.each do |link|
-            vars = {url: link["url"], issueId: issue_id, title: link["title"]}
+            vars = {url: link[:url], issueId: issue_id, title: link[:title]}
             data = client.query(LINK_MUTATION, variables: vars)
             next if data.dig("attachmentLinkURL", "success")
-            raise Error, "Failed to attach link: #{link["url"]}"
+            raise Error, "Failed to attach link: #{link[:url]}"
           end
         end
       end
