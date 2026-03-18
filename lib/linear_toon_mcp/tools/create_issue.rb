@@ -143,9 +143,9 @@ module LinearToonMcp
           return unless links
 
           links.each do |link|
-            data = client.query(LINK_MUTATION, variables: {url: link["url"], issueId: issue_id, title: link["title"]})
+            data = client.query(LINK_MUTATION, variables: {url: link[:url], issueId: issue_id, title: link[:title]})
             next if data.dig("attachmentLinkURL", "success")
-            raise Error, "Failed to attach link: #{link["url"]}"
+            raise Error, "Failed to attach link: #{link[:url]}"
           end
         end
       end

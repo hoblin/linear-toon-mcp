@@ -172,7 +172,7 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
     end
 
     context "with links" do
-      let(:params) { {id: issue_id, links: [{"url" => "https://example.com", "title" => "Example"}]} }
+      let(:params) { {id: issue_id, links: [{url: "https://example.com", title: "Example"}]} }
 
       before do
         allow(client).to receive(:query).and_return(
@@ -245,7 +245,7 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
     end
 
     context "when link creation fails" do
-      let(:params) { {id: issue_id, links: [{"url" => "https://bad.example", "title" => "Bad"}]} }
+      let(:params) { {id: issue_id, links: [{url: "https://bad.example", title: "Bad"}]} }
 
       before do
         allow(client).to receive(:query).with(described_class::MUTATION, anything)
