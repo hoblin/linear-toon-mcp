@@ -115,7 +115,7 @@ module LinearToonMcp
           raise Error, "Issue update failed" unless result["success"]
 
           issue = result["issue"]
-          warnings = post_update(client, id, kwargs)
+          warnings = post_update(client, id, **kwargs)
 
           text = Toon.encode(issue)
           text += "\nWARNING (issue was updated): #{warnings.join("; ")}" if warnings.any?
@@ -126,7 +126,7 @@ module LinearToonMcp
 
         private
 
-        def post_update(client, issue_id, kwargs)
+        def post_update(client, issue_id, links: nil, **kwargs)
           warnings = []
           begin
             replace_relations(client, issue_id, kwargs)
@@ -134,7 +134,7 @@ module LinearToonMcp
             warnings << e.message
           end
           begin
-            create_links(client, issue_id, kwargs[:links])
+            create_links(client, issue_id, links)
           rescue Error => e
             warnings << e.message
           end

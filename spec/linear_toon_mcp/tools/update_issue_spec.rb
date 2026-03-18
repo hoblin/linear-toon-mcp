@@ -266,6 +266,29 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       end
     end
 
+    context "when both relation and link creation fail" do
+      let(:params) { {id: issue_id, blocks: ["new-blocked"], links: [{url: "https://bad.example", title: "Bad"}]} }
+
+      before do
+        allow(client).to receive(:query).with(described_class::MUTATION, anything)
+          .and_return("issueUpdate" => {"success" => true, "issue" => issue_data})
+        allow(client).to receive(:query).with(described_class::RELATIONS_QUERY, anything)
+          .and_return("issue" => {"relations" => {"nodes" => []}})
+        allow(client).to receive(:query).with(described_class::RELATION_MUTATION, anything)
+          .and_return("issueRelationCreate" => {"success" => false})
+        allow(client).to receive(:query).with(described_class::LINK_MUTATION, anything)
+          .and_return("attachmentLinkURL" => {"success" => false})
+      end
+
+      it "returns issue data with both warnings" do
+        expect(response).not_to be_error
+        expect(response.content.first[:text]).to include("TEST-1")
+        expect(response.content.first[:text]).to include("WARNING (issue was updated)")
+        expect(response.content.first[:text]).to include("Failed to create blocks relation")
+        expect(response.content.first[:text]).to include("Failed to attach link")
+      end
+    end
+
     context "when mutation returns success: false" do
       before do
         allow(client).to receive(:query).and_return(
