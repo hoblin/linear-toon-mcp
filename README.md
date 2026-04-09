@@ -56,6 +56,7 @@ claude mcp add linear-toon -e LINEAR_API_KEY=lin_api_xxxxx -- linear-toon-mcp
 | `create_issue` | Create a new Linear issue. Accepts human-friendly names for team, assignee, state, labels, project, cycle, and milestone (resolved to IDs automatically). Supports issue relations and link attachments. |
 | `update_issue` | Update an existing Linear issue by ID. Supports partial updates, null to remove fields, and relation replacement. |
 | `create_comment` | Create a comment on a Linear issue. Supports Markdown content and threaded replies via parentId. |
+| `list_comments` | List comments for a specific Linear issue in chronological order. Returns each comment's id, body, author, and timestamps. |
 
 ## Development
 
