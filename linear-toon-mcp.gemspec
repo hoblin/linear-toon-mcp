@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   spec.executables = ["linear-toon-mcp"]
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "mcp", "~> 0.6"
+  spec.add_dependency "mcp", "~> 0.11"
   spec.add_dependency "openssl", ">= 3.3.1" # CRL verification fix for Linear API SSL
   spec.add_dependency "toon-ruby", "~> 0.1"
 end
