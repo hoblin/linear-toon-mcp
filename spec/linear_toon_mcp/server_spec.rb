@@ -6,8 +6,12 @@ RSpec.describe LinearToonMcp, ".server" do
 
   describe "initialize" do
     subject(:result) do
-      server.handle(jsonrpc: "2.0", id: 1, method: "initialize",
-        params: {protocolVersion: MCP::Configuration::LATEST_STABLE_PROTOCOL_VERSION, capabilities: {}, clientInfo: {name: "test"}})
+      server.handle({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {protocolVersion: MCP::Configuration::LATEST_STABLE_PROTOCOL_VERSION, capabilities: {}, clientInfo: {name: "test"}}
+      })
     end
 
     it "returns server info in handshake response" do
@@ -20,7 +24,7 @@ RSpec.describe LinearToonMcp, ".server" do
   end
 
   describe "tools/list" do
-    subject(:result) { server.handle(jsonrpc: "2.0", id: 1, method: "tools/list", params: {}) }
+    subject(:result) { server.handle({jsonrpc: "2.0", id: 1, method: "tools/list", params: {}}) }
 
     it "lists all tools" do
       expect(result[:result][:tools]).to contain_exactly(

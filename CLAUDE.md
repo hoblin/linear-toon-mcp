@@ -30,7 +30,7 @@ bundle exec standardrb --fix               # lint + autofix
 
 ## Key Dependencies
 
-- `mcp` (~> 0.6) — MCP server framework
+- `mcp` (~> 0.11) — MCP server framework
 - `toon-ruby` (~> 0.1) — JSON-to-TOON serialization (`Toon.encode(data)`)
 - `standard` — linter (dev)
 - Ruby >= 3.2, toolchain managed by mise (Ruby 3.4)
