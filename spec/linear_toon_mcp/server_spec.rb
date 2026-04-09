@@ -40,7 +40,8 @@ RSpec.describe LinearToonMcp, ".server" do
         include(name: "create_comment", description: "Create a comment on a Linear issue"),
         include(name: "list_comments", description: "List comments for a specific Linear issue"),
         include(name: "create_issue", description: "Create a new Linear issue"),
-        include(name: "update_issue", description: "Update an existing Linear issue")
+        include(name: "update_issue", description: "Update an existing Linear issue"),
+        include(name: "extract_images", description: "Extract and fetch images referenced in markdown content")
       )
     end
   end

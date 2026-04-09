@@ -17,6 +17,7 @@ require_relative "linear_toon_mcp/tools/list_issue_labels"
 require_relative "linear_toon_mcp/tools/list_projects"
 require_relative "linear_toon_mcp/tools/list_cycles"
 require_relative "linear_toon_mcp/tools/get_project"
+require_relative "linear_toon_mcp/tools/extract_images"
 
 # Token-efficient MCP server for Linear. Wraps Linear's GraphQL API
 # and returns TOON-formatted responses for ~40-60% token savings.
@@ -32,7 +33,7 @@ module LinearToonMcp
       name: "linear-toon-mcp",
       version: VERSION,
       description: "Manage Linear issues, projects, and teams",
-      tools: [Tools::GetIssue, Tools::ListIssues, Tools::ListIssueStatuses, Tools::ListTeams, Tools::ListUsers, Tools::ListIssueLabels, Tools::ListProjects, Tools::ListCycles, Tools::GetProject, Tools::CreateComment, Tools::ListComments, Tools::CreateIssue, Tools::UpdateIssue],
+      tools: [Tools::GetIssue, Tools::ListIssues, Tools::ListIssueStatuses, Tools::ListTeams, Tools::ListUsers, Tools::ListIssueLabels, Tools::ListProjects, Tools::ListCycles, Tools::GetProject, Tools::CreateComment, Tools::ListComments, Tools::CreateIssue, Tools::UpdateIssue, Tools::ExtractImages],
       server_context: {client:}
     )
   end

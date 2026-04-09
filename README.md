@@ -57,6 +57,7 @@ claude mcp add linear-toon -e LINEAR_API_KEY=lin_api_xxxxx -- linear-toon-mcp
 | `update_issue` | Update an existing Linear issue by ID. Supports partial updates, null to remove fields, and relation replacement. |
 | `create_comment` | Create a comment on a Linear issue. Supports Markdown content and threaded replies via parentId. |
 | `list_comments` | List comments for a specific Linear issue in chronological order. Returns each comment's id, body, author, and timestamps. |
+| `extract_images` | Extract and fetch images referenced in markdown (issue descriptions, comments). Parses Markdown and HTML `<img>` tags, downloads each unique URL, and returns the images as MCP image content so the LLM can view them inline. Sends the Linear API key only to `*.linear.app` hosts. |
 
 ## Development
 

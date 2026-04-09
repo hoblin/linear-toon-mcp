@@ -5,9 +5,14 @@ require "json"
 require "uri"
 
 module LinearToonMcp
-  # Minimal HTTP client for Linear's GraphQL API.
+  # Minimal HTTP client for Linear's GraphQL API and authenticated asset
+  # downloads (e.g. images hosted on +uploads.linear.app+).
   class Client
     ENDPOINT = URI("https://api.linear.app/graphql").freeze
+
+    # Hosts that receive the Linear API key as an +Authorization+ header.
+    # Other hosts are fetched unauthenticated to avoid leaking the key.
+    LINEAR_HOST_SUFFIX = ".linear.app"
 
     # @param api_key [String] Linear API key (defaults to +LINEAR_API_KEY+ env var)
     # @raise [ArgumentError] when API key is nil or empty
@@ -46,7 +51,41 @@ module LinearToonMcp
       body["data"]
     end
 
+    # Fetch a raw HTTP resource (used for downloading Linear asset URLs such
+    # as images embedded in issue descriptions). The Linear API key is only
+    # sent to +*.linear.app+ hosts so the credential never leaks to third
+    # parties referenced in user-provided markdown.
+    #
+    # @param url [String] absolute HTTP(S) URL to download
+    # @return [Net::HTTPResponse] the raw successful response
+    # @raise [Error] on invalid URLs, unsupported schemes, or HTTP failures
+    def fetch(url)
+      uri = begin
+        URI.parse(url)
+      rescue URI::InvalidURIError
+        raise Error, "Invalid URL: #{url}"
+      end
+
+      raise Error, "Unsupported URL scheme: #{uri.scheme.inspect}" unless %w[http https].include?(uri.scheme)
+      raise Error, "URL missing host: #{url}" if uri.host.nil? || uri.host.empty?
+
+      request = Net::HTTP::Get.new(uri)
+      request["Authorization"] = @api_key if linear_host?(uri.host)
+
+      response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
+        http.request(request)
+      end
+
+      raise Error, "HTTP #{response.code}: failed to fetch #{url}" unless response.is_a?(Net::HTTPSuccess)
+
+      response
+    end
+
     private
+
+    def linear_host?(host)
+      host == "linear.app" || host.end_with?(LINEAR_HOST_SUFFIX)
+    end
 
     def post(query_string, variables)
       request = Net::HTTP::Post.new(ENDPOINT)
