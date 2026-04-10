@@ -157,5 +157,77 @@ RSpec.describe LinearToonMcp::Client do
       expect { client.fetch("http://[::bad uri") }
         .to raise_error(LinearToonMcp::Error, /Invalid URL/)
     end
+
+    context "when the server returns a redirect" do
+      def stub_redirect_chain(*responses_config)
+        call_count = 0
+        allow(Net::HTTP).to receive(:start) do |_host, _port, **_opts, &block|
+          config = responses_config[call_count] || responses_config.last
+          call_count += 1
+          code = config[:code]
+          response = Net::HTTPResponse::CODE_TO_OBJ[code].new("1.1", code, "")
+          allow(response).to receive(:body).and_return(config[:body] || "")
+          allow(response).to receive(:[]).and_call_original
+          allow(response).to receive(:[]).with("Location").and_return(config[:location])
+          http = instance_double(Net::HTTP)
+          allow(http).to receive(:request) do |request|
+            captured_request[:authorization] = request["Authorization"]
+            response
+          end
+          block.call(http)
+        end
+      end
+
+      it "follows a 302 redirect and returns the final response" do
+        stub_redirect_chain(
+          {code: "302", location: "https://cdn.example.com/real.png"},
+          {code: "200", body: "IMAGE"}
+        )
+
+        response = client.fetch("https://uploads.linear.app/redirect.png")
+
+        expect(response.body).to eq("IMAGE")
+      end
+
+      it "follows a 301 redirect" do
+        stub_redirect_chain(
+          {code: "301", location: "https://cdn.example.com/moved.png"},
+          {code: "200", body: "MOVED"}
+        )
+
+        response = client.fetch("https://uploads.linear.app/old.png")
+
+        expect(response.body).to eq("MOVED")
+      end
+
+      it "does not send API key to a third-party redirect target" do
+        stub_redirect_chain(
+          {code: "302", location: "https://cdn.example.com/img.png"},
+          {code: "200", body: "IMG"}
+        )
+
+        client.fetch("https://uploads.linear.app/redir.png")
+
+        expect(captured_request[:authorization]).to be_nil
+      end
+
+      it "raises when too many redirects are followed" do
+        stub_redirect_chain(
+          {code: "302", location: "https://example.com/loop"}
+        )
+
+        expect { client.fetch("https://example.com/loop") }
+          .to raise_error(LinearToonMcp::Error, /Too many redirects/)
+      end
+
+      it "raises when a redirect has no Location header" do
+        stub_redirect_chain(
+          {code: "302", location: nil}
+        )
+
+        expect { client.fetch("https://example.com/bad-redir") }
+          .to raise_error(LinearToonMcp::Error, /Redirect without Location/)
+      end
+    end
   end
 end

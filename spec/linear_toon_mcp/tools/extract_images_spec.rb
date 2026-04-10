@@ -199,6 +199,34 @@ RSpec.describe LinearToonMcp::Tools::ExtractImages do
       end
     end
 
+    context "when fetching an image raises a network-level exception" do
+      let(:markdown) { "![dns](https://uploads.linear.app/dns-fail.png)" }
+
+      before do
+        allow(client).to receive(:fetch).and_raise(SocketError, "getaddrinfo: Name or service not known")
+      end
+
+      it "collects the error as a per-image failure instead of crashing" do
+        expect(response).not_to be_error
+        expect(response.content.first[:text]).to include("Fetched 0 of 1")
+        expect(response.content.first[:text]).to include("SocketError")
+      end
+    end
+
+    context "when fetching an image raises a timeout" do
+      let(:markdown) { "![slow](https://uploads.linear.app/slow.png)" }
+
+      before do
+        allow(client).to receive(:fetch).and_raise(Net::OpenTimeout, "execution expired")
+      end
+
+      it "collects the timeout as a per-image failure instead of crashing" do
+        expect(response).not_to be_error
+        expect(response.content.first[:text]).to include("Fetched 0 of 1")
+        expect(response.content.first[:text]).to include("Net::OpenTimeout")
+      end
+    end
+
     context "when server_context has no client" do
       subject(:response) { described_class.call(markdown: "![](x.png)", server_context: {}) }
 

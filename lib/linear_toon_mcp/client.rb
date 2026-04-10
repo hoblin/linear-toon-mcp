@@ -51,15 +51,49 @@ module LinearToonMcp
       body["data"]
     end
 
+    # Maximum number of HTTP redirects to follow before giving up.
+    MAX_REDIRECTS = 5
+
     # Fetch a raw HTTP resource (used for downloading Linear asset URLs such
     # as images embedded in issue descriptions). The Linear API key is only
     # sent to +*.linear.app+ hosts so the credential never leaks to third
-    # parties referenced in user-provided markdown.
+    # parties referenced in user-provided markdown. Follows up to
+    # {MAX_REDIRECTS} redirects automatically.
     #
     # @param url [String] absolute HTTP(S) URL to download
     # @return [Net::HTTPResponse] the raw successful response
-    # @raise [Error] on invalid URLs, unsupported schemes, or HTTP failures
+    # @raise [Error] on invalid URLs, unsupported schemes, too many redirects,
+    #   or HTTP failures
     def fetch(url)
+      uri = parse_fetch_uri(url)
+      redirects = 0
+
+      loop do
+        request = Net::HTTP::Get.new(uri)
+        request["Authorization"] = @api_key if linear_host?(uri.host)
+
+        response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
+          http.request(request)
+        end
+
+        return response if response.is_a?(Net::HTTPSuccess)
+
+        if response.is_a?(Net::HTTPRedirection)
+          location = response["Location"]
+          raise Error, "Redirect without Location header for #{url}" unless location
+          redirects += 1
+          raise Error, "Too many redirects for #{url}" if redirects > MAX_REDIRECTS
+          uri = parse_fetch_uri(location)
+          next
+        end
+
+        raise Error, "HTTP #{response.code}: failed to fetch #{url}"
+      end
+    end
+
+    private
+
+    def parse_fetch_uri(url)
       uri = begin
         URI.parse(url)
       rescue URI::InvalidURIError
@@ -69,19 +103,8 @@ module LinearToonMcp
       raise Error, "Unsupported URL scheme: #{uri.scheme.inspect}" unless %w[http https].include?(uri.scheme)
       raise Error, "URL missing host: #{url}" if uri.host.nil? || uri.host.empty?
 
-      request = Net::HTTP::Get.new(uri)
-      request["Authorization"] = @api_key if linear_host?(uri.host)
-
-      response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
-        http.request(request)
-      end
-
-      raise Error, "HTTP #{response.code}: failed to fetch #{url}" unless response.is_a?(Net::HTTPSuccess)
-
-      response
+      uri
     end
-
-    private
 
     def linear_host?(host)
       host == "linear.app" || host.end_with?(LINEAR_HOST_SUFFIX)

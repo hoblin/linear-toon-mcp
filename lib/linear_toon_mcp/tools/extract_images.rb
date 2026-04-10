@@ -87,6 +87,8 @@ module LinearToonMcp
             images << fetch_image(client, url)
           rescue Error => e
             failures << "#{url}: #{e.message}"
+          rescue => e
+            failures << "#{url}: #{e.class}: #{e.message}"
           end
 
           [images, failures]
