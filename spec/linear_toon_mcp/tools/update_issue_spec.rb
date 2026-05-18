@@ -94,6 +94,25 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       end
     end
 
+    context "with labels but no team" do
+      let(:params) { {id: issue_id, labels: ["Bug"]} }
+
+      before do
+        allow(client).to receive(:query).with(described_class::ISSUE_TEAM_QUERY, variables: {id: issue_id})
+          .and_return("issue" => {"team" => {"id" => "fetched-team-uuid"}})
+        allow(LinearToonMcp::Resolvers).to receive(:resolve_labels)
+          .with(client, ["Bug"], team_id: "fetched-team-uuid").and_return(["label-uuid"])
+        allow(client).to receive(:query).with(described_class::MUTATION, anything)
+          .and_return("issueUpdate" => {"success" => true, "issue" => issue_data})
+      end
+
+      it "fetches issue team and resolves labels scoped to it" do
+        response
+        expect(client).to have_received(:query).with(described_class::ISSUE_TEAM_QUERY, variables: {id: issue_id})
+        expect(LinearToonMcp::Resolvers).to have_received(:resolve_labels).with(client, ["Bug"], team_id: "fetched-team-uuid")
+      end
+    end
+
     context "with state but no team" do
       let(:params) { {id: issue_id, state: "Done"} }
 
