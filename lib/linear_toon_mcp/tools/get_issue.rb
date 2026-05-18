@@ -5,9 +5,10 @@ require "toon"
 module LinearToonMcp
   module Tools
     # Fetch a single Linear issue by ID or identifier and return it as TOON.
-    # Includes metadata, state, assignee, labels, project, team, and attachments.
+    # Includes metadata, state, assignee, labels, project, team, attachments,
+    # parent issue, and direct child issues.
     class GetIssue < MCP::Tool
-      description "Retrieve a Linear issue by ID"
+      description "Retrieve a Linear issue by ID, including its parent and direct child issues"
 
       annotations(
         read_only_hint: true,
@@ -46,6 +47,8 @@ module LinearToonMcp
             project { id name }
             team { id name }
             attachments { nodes { id title url } }
+            parent { identifier title url state { name } }
+            children(first: 50) { nodes { identifier title url state { name } } }
           }
         }
       GRAPHQL

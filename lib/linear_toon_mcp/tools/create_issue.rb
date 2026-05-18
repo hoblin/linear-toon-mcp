@@ -6,7 +6,10 @@ module LinearToonMcp
   module Tools
     # Create a new Linear issue with full parameter support.
     # Resolves human-friendly names to IDs for team, assignee, state, labels,
-    # project, cycle, and milestone. Supports post-mutation relations and links.
+    # project, cycle, and milestone. Relation params (blocks, relatedTo,
+    # duplicateOf) and parentId accept either issue UUIDs or human identifiers
+    # (e.g., LIN-123); both are passed through to Linear unchanged.
+    # Supports post-mutation relations and links.
     class CreateIssue < MCP::Tool
       description "Create a new Linear issue"
 
@@ -30,10 +33,10 @@ module LinearToonMcp
           cycle: {type: "string", description: "Cycle name, number, or ID"},
           estimate: {type: "number", description: "Issue estimate value"},
           dueDate: {type: "string", description: "Due date (ISO format)"},
-          parentId: {type: "string", description: "Parent issue ID"},
-          blocks: {type: "array", items: {type: "string"}, description: "Issue IDs/identifiers this blocks"},
-          relatedTo: {type: "array", items: {type: "string"}, description: "Related issue IDs/identifiers"},
-          duplicateOf: {type: "string", description: "Duplicate of issue ID/identifier"},
+          parentId: {type: "string", description: "Parent issue UUID or identifier (e.g., LIN-123)"},
+          blocks: {type: "array", items: {type: "string"}, description: "Issue UUIDs or identifiers this blocks"},
+          relatedTo: {type: "array", items: {type: "string"}, description: "Related issue UUIDs or identifiers"},
+          duplicateOf: {type: "string", description: "Duplicate-of issue UUID or identifier"},
           milestone: {type: "string", description: "Milestone name or ID"},
           delegate: {type: "string", description: "Agent name or ID"},
           links: {type: "array", items: {type: "object", properties: {url: {type: "string"}, title: {type: "string"}}, required: ["url", "title"]}, description: "Link attachments [{url, title}]"}
@@ -88,7 +91,7 @@ module LinearToonMcp
           resolve_fields(input, client, team_id, **kwargs)
 
           data = client.query(MUTATION, variables: {input:})
-          result = data["issueCreate"]
+          result = data["issueCreate"] or raise Error, "Issue creation failed: no result returned"
           raise Error, "Issue creation failed" unless result["success"]
 
           issue = result["issue"]

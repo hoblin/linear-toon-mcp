@@ -44,7 +44,7 @@ claude mcp add linear-toon -e LINEAR_API_KEY=lin_api_xxxxx -- linear-toon-mcp
 
 | Tool | Description |
 |------|-------------|
-| `get_issue` | Retrieve a Linear issue by ID or identifier (e.g., `LIN-123`). Returns issue details including title, description, state, assignee, labels, project, and attachments. |
+| `get_issue` | Retrieve a Linear issue by ID or identifier (e.g., `LIN-123`). Returns issue details including title, description, state, assignee, labels, project, attachments, and the parent and direct child issues (each with identifier, title, state, and url). |
 | `list_issues` | List issues with optional filters (team, assignee, state, label, priority, project, cycle) and cursor-based pagination. Supports name or UUID for most filters. |
 | `list_issue_statuses` | List available workflow states for a team. Returns status id, type (backlog/unstarted/started/completed/canceled), and name. Accepts team name or UUID. |
 | `list_teams` | List all teams in the workspace. Returns team id, name, and key. |
@@ -53,8 +53,8 @@ claude mcp add linear-toon -e LINEAR_API_KEY=lin_api_xxxxx -- linear-toon-mcp
 | `list_projects` | List projects, optionally scoped to a team. Returns project id, name, and state. |
 | `list_cycles` | List cycles for a team. Returns cycle id, name, number, startsAt, and endsAt. Requires team name or UUID. |
 | `get_project` | Retrieve a specific project by name, ID, or slug. Returns project details including state, priority, dates, progress, and lead. Optional includes for members, milestones, and resources. |
-| `create_issue` | Create a new Linear issue. Accepts human-friendly names for team, assignee, state, labels, project, cycle, and milestone (resolved to IDs automatically; label names resolve against the target team or workspace-wide labels). Supports issue relations and link attachments. |
-| `update_issue` | Update an existing Linear issue by ID. Supports partial updates, null to remove fields, and relation replacement. Label names resolve against the issue's team or workspace-wide labels. |
+| `create_issue` | Create a new Linear issue. Accepts human-friendly names for team, assignee, state, labels, project, cycle, and milestone (resolved to IDs automatically; label names resolve against the target team or workspace-wide labels). Relation params (`blocks`, `relatedTo`, `duplicateOf`) and `parentId` accept either issue UUIDs or human identifiers (e.g., `LIN-123`). Supports issue relations and link attachments. |
+| `update_issue` | Update an existing Linear issue by ID. Supports partial updates, null to remove fields, and relation replacement. Relation params (`blocks`, `relatedTo`, `duplicateOf`) and `parentId` accept either issue UUIDs or human identifiers (e.g., `LIN-123`). Label names resolve against the issue's team or workspace-wide labels. |
 | `create_comment` | Create a comment on a Linear issue. Supports Markdown content and threaded replies via parentId. |
 | `list_comments` | List comments for a specific Linear issue in chronological order. Returns each comment's id, body, author, and timestamps. |
 
