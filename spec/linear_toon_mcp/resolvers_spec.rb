@@ -127,11 +127,28 @@ RSpec.describe LinearToonMcp::Resolvers do
       described_class.resolve_labels(client, ["bug"], team_id: "team-uuid")
       expect(client).to have_received(:query).with(
         anything,
-        variables: hash_including(filter: hash_including(or: [
-          {team: {null: true}},
-          {team: {id: {eq: "team-uuid"}}}
-        ]))
+        variables: {filter: {
+          name: {eqIgnoreCase: "bug"},
+          or: [
+            {team: {null: true}},
+            {team: {id: {eq: "team-uuid"}}}
+          ]
+        }}
       )
+    end
+
+    it "mixes UUIDs and names without re-querying the UUIDs" do
+      allow(client).to receive(:query).and_return("issueLabels" => {"nodes" => [{"id" => "name-resolved"}]})
+      result = described_class.resolve_labels(client, [uuid, "bug"], team_id: "team-uuid")
+      expect(result).to eq([uuid, "name-resolved"])
+      expect(client).to have_received(:query).once
+    end
+
+    it "returns an empty array without querying when given no labels" do
+      allow(client).to receive(:query)
+      result = described_class.resolve_labels(client, [], team_id: "team-uuid")
+      expect(result).to eq([])
+      expect(client).not_to have_received(:query)
     end
   end
 
