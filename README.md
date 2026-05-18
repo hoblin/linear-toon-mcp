@@ -44,7 +44,7 @@ claude mcp add linear-toon -e LINEAR_API_KEY=lin_api_xxxxx -- linear-toon-mcp
 
 | Tool | Description |
 |------|-------------|
-| `get_issue` | Retrieve a Linear issue by ID or identifier (e.g., `LIN-123`). Returns issue details including title, description, state, assignee, labels, project, and attachments. |
+| `get_issue` | Retrieve a Linear issue by ID or identifier (e.g., `LIN-123`). Returns issue details including title, description, state, assignee, labels, project, attachments, and the parent and direct child issues (each with identifier, title, state, and url). |
 | `list_issues` | List issues with optional filters (team, assignee, state, label, priority, project, cycle) and cursor-based pagination. Supports name or UUID for most filters. |
 | `list_issue_statuses` | List available workflow states for a team. Returns status id, type (backlog/unstarted/started/completed/canceled), and name. Accepts team name or UUID. |
 | `list_teams` | List all teams in the workspace. Returns team id, name, and key. |
