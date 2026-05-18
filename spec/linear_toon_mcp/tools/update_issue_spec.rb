@@ -309,6 +309,30 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       end
     end
 
+    context "with a mix of UUID and identifier in the same blocks array" do
+      let(:params) { {id: issue_id, blocks: ["other-uuid", "VIB-7517"]} }
+
+      before do
+        allow(client).to receive(:query).and_return(
+          "issueUpdate" => {"success" => true, "issue" => issue_data},
+          "issue" => {"relations" => {"nodes" => []}},
+          "issueRelationCreate" => {"success" => true}
+        )
+      end
+
+      it "passes both forms through to Linear unchanged" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::RELATION_MUTATION,
+          variables: {input: {issueId: issue_id, relatedIssueId: "other-uuid", type: "blocks"}}
+        )
+        expect(client).to have_received(:query).with(
+          described_class::RELATION_MUTATION,
+          variables: {input: {issueId: issue_id, relatedIssueId: "VIB-7517", type: "blocks"}}
+        )
+      end
+    end
+
     context "with identifier in relatedTo and duplicateOf" do
       let(:params) { {id: issue_id, relatedTo: ["VIB-100"], duplicateOf: "VIB-200"} }
 
@@ -345,14 +369,14 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       end
     end
 
-    context "when Linear returns data without an issueUpdate key" do
+    context "when the mutation response is missing the issueUpdate key" do
       before do
-        allow(client).to receive(:query).and_return({})
+        allow(client).to receive(:query).with(described_class::MUTATION, anything).and_return({})
       end
 
       it "returns a clean error response instead of crashing" do
         expect(response).to be_a(MCP::Tool::Response).and be_error
-        expect(response.content.first[:text]).to include("Issue update failed")
+        expect(response.content.first[:text]).to include("Issue update failed: no result returned")
       end
     end
 

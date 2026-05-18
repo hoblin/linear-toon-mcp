@@ -5,7 +5,10 @@ require "toon"
 module LinearToonMcp
   module Tools
     # Update an existing Linear issue by ID. Supports partial updates,
-    # null to remove fields, and relation replacement semantics.
+    # null to remove fields, and relation replacement semantics. Relation
+    # params (blocks, relatedTo, duplicateOf) and parentId accept either
+    # issue UUIDs or human identifiers (e.g., LIN-123); both are passed
+    # through to Linear unchanged.
     class UpdateIssue < MCP::Tool
       description "Update an existing Linear issue"
 

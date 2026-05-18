@@ -6,7 +6,10 @@ module LinearToonMcp
   module Tools
     # Create a new Linear issue with full parameter support.
     # Resolves human-friendly names to IDs for team, assignee, state, labels,
-    # project, cycle, and milestone. Supports post-mutation relations and links.
+    # project, cycle, and milestone. Relation params (blocks, relatedTo,
+    # duplicateOf) and parentId accept either issue UUIDs or human identifiers
+    # (e.g., LIN-123); both are passed through to Linear unchanged.
+    # Supports post-mutation relations and links.
     class CreateIssue < MCP::Tool
       description "Create a new Linear issue"
 
@@ -88,7 +91,7 @@ module LinearToonMcp
           resolve_fields(input, client, team_id, **kwargs)
 
           data = client.query(MUTATION, variables: {input:})
-          result = data["issueCreate"]
+          result = data["issueCreate"] or raise Error, "Issue creation failed: no result returned"
           raise Error, "Issue creation failed" unless result["success"]
 
           issue = result["issue"]

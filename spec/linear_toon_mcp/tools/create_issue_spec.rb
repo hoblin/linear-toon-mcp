@@ -258,6 +258,17 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
       end
     end
 
+    context "when the mutation response is missing the issueCreate key" do
+      before do
+        allow(client).to receive(:query).with(described_class::MUTATION, anything).and_return({})
+      end
+
+      it "returns a clean error response instead of crashing" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("Issue creation failed: no result returned")
+      end
+    end
+
     context "when resolver fails" do
       let(:params) { {title: "New issue", team: "Missing"} }
 
