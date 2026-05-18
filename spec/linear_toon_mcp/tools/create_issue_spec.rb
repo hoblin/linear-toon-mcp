@@ -141,6 +141,28 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
       end
     end
 
+    context "with issue identifiers in relation params" do
+      let(:params) { {title: "New issue", team: team_id, blocks: ["VIB-100"], relatedTo: ["VIB-200"], duplicateOf: "VIB-300", parentId: "VIB-400"} }
+
+      before do
+        allow(client).to receive(:query).and_return(
+          "issueCreate" => {"success" => true, "issue" => issue_data},
+          "issueRelationCreate" => {"success" => true}
+        )
+      end
+
+      it "passes identifiers straight to Linear without resolving" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::MUTATION,
+          variables: {input: hash_including(parentId: "VIB-400")}
+        )
+        expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "VIB-100", type: "blocks"}})
+        expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "VIB-200", type: "related"}})
+        expect(client).to have_received(:query).with(described_class::RELATION_MUTATION, variables: {input: {issueId: "issue-uuid", relatedIssueId: "VIB-300", type: "duplicate"}})
+      end
+    end
+
     context "with links" do
       let(:params) { {title: "New issue", team: team_id, links: [{url: "https://example.com", title: "Example"}]} }
 
