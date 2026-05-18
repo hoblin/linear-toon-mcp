@@ -5,7 +5,10 @@ require "toon"
 module LinearToonMcp
   module Tools
     # Update an existing Linear issue by ID. Supports partial updates,
-    # null to remove fields, and relation replacement semantics.
+    # null to remove fields, and relation replacement semantics. Relation
+    # params (blocks, relatedTo, duplicateOf) and parentId accept either
+    # issue UUIDs or human identifiers (e.g., LIN-123); both are passed
+    # through to Linear unchanged.
     class UpdateIssue < MCP::Tool
       description "Update an existing Linear issue"
 
@@ -30,10 +33,10 @@ module LinearToonMcp
           cycle: {type: "string", description: "Cycle name, number, or ID"},
           estimate: {type: "number", description: "Issue estimate value"},
           dueDate: {type: "string", description: "Due date (ISO format)"},
-          parentId: {type: ["string", "null"], description: "Parent issue ID. Null to remove"},
-          blocks: {type: "array", items: {type: "string"}, description: "Issue IDs this blocks. Replaces existing; omit to keep unchanged"},
-          relatedTo: {type: "array", items: {type: "string"}, description: "Related issue IDs. Replaces existing; omit to keep unchanged"},
-          duplicateOf: {type: ["string", "null"], description: "Duplicate of issue ID. Null to remove"},
+          parentId: {type: ["string", "null"], description: "Parent issue UUID or identifier (e.g., LIN-123). Null to remove"},
+          blocks: {type: "array", items: {type: "string"}, description: "Issue UUIDs or identifiers this blocks. Replaces existing; omit to keep unchanged"},
+          relatedTo: {type: "array", items: {type: "string"}, description: "Related issue UUIDs or identifiers. Replaces existing; omit to keep unchanged"},
+          duplicateOf: {type: ["string", "null"], description: "Duplicate-of issue UUID or identifier. Null to remove"},
           milestone: {type: "string", description: "Milestone name or ID"},
           delegate: {type: ["string", "null"], description: "Agent name or ID. Null to remove"},
           links: {type: "array", items: {type: "object", properties: {url: {type: "string"}, title: {type: "string"}}, required: ["url", "title"]}, description: "Link attachments [{url, title}]"}
@@ -111,7 +114,7 @@ module LinearToonMcp
           build_input(input, client, team_id, kwargs)
 
           data = client.query(MUTATION, variables: {id:, input:})
-          result = data["issueUpdate"]
+          result = data["issueUpdate"] or raise Error, "Issue update failed: no result returned"
           raise Error, "Issue update failed" unless result["success"]
 
           issue = result["issue"]
