@@ -8,7 +8,7 @@ module LinearToonMcp
     # Includes metadata, state, assignee, labels, project, team, attachments,
     # parent issue, and direct child issues.
     class GetIssue < MCP::Tool
-      description "Retrieve a Linear issue by ID"
+      description "Retrieve a Linear issue by ID, including its parent and direct child issues"
 
       annotations(
         read_only_hint: true,
@@ -48,7 +48,7 @@ module LinearToonMcp
             team { id name }
             attachments { nodes { id title url } }
             parent { identifier title url state { name } }
-            children { nodes { identifier title url state { name } } }
+            children(first: 50) { nodes { identifier title url state { name } } }
           }
         }
       GRAPHQL

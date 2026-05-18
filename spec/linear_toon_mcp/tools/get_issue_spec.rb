@@ -41,6 +41,12 @@ RSpec.describe LinearToonMcp::Tools::GetIssue do
               "title" => "Sub-task A",
               "url" => "https://linear.app/test/issue/TEST-2",
               "state" => {"name" => "Done"}
+            },
+            {
+              "identifier" => "TEST-3",
+              "title" => "Sub-task B",
+              "url" => "https://linear.app/test/issue/TEST-3",
+              "state" => {"name" => "In Progress"}
             }
           ]
         }
@@ -63,16 +69,19 @@ RSpec.describe LinearToonMcp::Tools::GetIssue do
       expect(response.content.first[:text]).to include("Umbrella epic")
     end
 
-    it "includes child issues in the response" do
-      expect(response.content.first[:text]).to include("TEST-2")
-      expect(response.content.first[:text]).to include("Sub-task A")
+    it "includes all child issues in the response" do
+      text = response.content.first[:text]
+      expect(text).to include("TEST-2")
+      expect(text).to include("Sub-task A")
+      expect(text).to include("TEST-3")
+      expect(text).to include("Sub-task B")
     end
 
-    it "requests parent and children fields from Linear" do
+    it "requests parent and capped children fields from Linear" do
       response
       expect(client).to have_received(:query).with(
         a_string_matching(/parent \{ identifier title url state \{ name \} \}/)
-          .and(a_string_matching(/children \{ nodes \{ identifier title url state \{ name \} \} \}/)),
+          .and(a_string_matching(/children\(first: 50\) \{ nodes \{ identifier title url state \{ name \} \} \}/)),
         variables: {id: "TEST-1"}
       )
     end
