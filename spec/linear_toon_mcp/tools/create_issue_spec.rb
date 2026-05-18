@@ -64,7 +64,7 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
         allow(LinearToonMcp::Resolvers).to receive(:resolve_team).with(client, "Engineering").and_return(team_id)
         allow(LinearToonMcp::Resolvers).to receive(:resolve_user).with(client, "Alice").and_return("user-uuid")
         allow(LinearToonMcp::Resolvers).to receive(:resolve_state).with(client, team_id, "In Progress").and_return("state-uuid")
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_labels).with(client, ["bug", "urgent"]).and_return(["l1", "l2"])
+        allow(LinearToonMcp::Resolvers).to receive(:resolve_labels).with(client, ["bug", "urgent"], team_id: team_id).and_return(["l1", "l2"])
         allow(LinearToonMcp::Resolvers).to receive(:resolve_project).with(client, "My Project").and_return("proj-uuid")
         allow(LinearToonMcp::Resolvers).to receive(:resolve_cycle).with(client, team_id, "Sprint 5").and_return("cycle-uuid")
       end

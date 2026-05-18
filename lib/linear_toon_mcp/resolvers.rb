@@ -92,21 +92,45 @@ module LinearToonMcp
       data.dig("workflowStates", "nodes", 0, "id") or raise Error, "State not found: #{value}"
     end
 
+    # Resolve a single label name or UUID to its UUID.
+    # When +team_id+ is supplied, restricts the lookup to labels scoped to that
+    # team or to workspace-wide labels (where the label's team relation is null),
+    # so a name like "Bug" matches the right team-scoped label and not a same-named
+    # label on another team.
     # @param client [Client]
     # @param value [String] label UUID or name
+    # @param team_id [String, nil] optional team UUID to scope the lookup
     # @return [String] label UUID
     # @raise [Error] when label not found
-    def resolve_label(client, value)
+    def resolve_label(client, value, team_id: nil)
       return value if value.match?(UUID_RE)
-      data = client.query(LABEL_QUERY, variables: {filter: {name: {eqIgnoreCase: value}}})
-      data.dig("issueLabels", "nodes", 0, "id") or raise Error, "Label not found: #{value}"
+
+      filter = {name: {eqIgnoreCase: value}}
+      if team_id
+        filter[:or] = [
+          {team: {null: true}},
+          {team: {id: {eq: team_id}}}
+        ]
+      end
+
+      data = client.query(LABEL_QUERY, variables: {filter:})
+      id = data.dig("issueLabels", "nodes", 0, "id")
+      return id if id
+
+      raise Error, label_not_found_message(value, team_id)
     end
 
     # @param client [Client]
     # @param values [Array<String>] label UUIDs or names
+    # @param team_id [String, nil] optional team UUID to scope the lookup
     # @return [Array<String>] label UUIDs
-    def resolve_labels(client, values)
-      values.map { |v| resolve_label(client, v) }
+    def resolve_labels(client, values, team_id: nil)
+      values.map { |v| resolve_label(client, v, team_id:) }
+    end
+
+    def label_not_found_message(value, team_id)
+      return "Label not found: #{value}" unless team_id
+      "Label not found on target team or workspace: #{value}"
     end
 
     # @param client [Client]

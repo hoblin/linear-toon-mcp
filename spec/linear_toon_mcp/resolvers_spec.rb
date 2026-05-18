@@ -67,18 +67,46 @@ RSpec.describe LinearToonMcp::Resolvers do
   end
 
   describe ".resolve_label" do
+    let(:team_id) { "team-uuid" }
+
     it "passes through UUIDs unchanged" do
       expect(described_class.resolve_label(client, uuid)).to eq(uuid)
     end
 
-    it "resolves a name to an ID" do
+    it "resolves a name to an ID with a plain name filter when no team given" do
       allow(client).to receive(:query).and_return("issueLabels" => {"nodes" => [{"id" => "label-uuid"}]})
       expect(described_class.resolve_label(client, "bug")).to eq("label-uuid")
+      expect(client).to have_received(:query).with(
+        anything,
+        variables: {filter: {name: {eqIgnoreCase: "bug"}}}
+      )
     end
 
-    it "raises when label not found" do
+    it "scopes the lookup to the team (and workspace labels) when team_id is given" do
+      allow(client).to receive(:query).and_return("issueLabels" => {"nodes" => [{"id" => "label-uuid"}]})
+      described_class.resolve_label(client, "bug", team_id: team_id)
+      expect(client).to have_received(:query).with(
+        anything,
+        variables: {filter: {
+          name: {eqIgnoreCase: "bug"},
+          or: [
+            {team: {null: true}},
+            {team: {id: {eq: team_id}}}
+          ]
+        }}
+      )
+    end
+
+    it "raises a team-aware error when label not found on team or workspace" do
       allow(client).to receive(:query).and_return("issueLabels" => {"nodes" => []})
-      expect { described_class.resolve_label(client, "Missing") }.to raise_error(LinearToonMcp::Error, /Label not found/)
+      expect { described_class.resolve_label(client, "Missing", team_id: team_id) }
+        .to raise_error(LinearToonMcp::Error, /Label not found on target team or workspace: Missing/)
+    end
+
+    it "raises a plain error when label not found without team scope" do
+      allow(client).to receive(:query).and_return("issueLabels" => {"nodes" => []})
+      expect { described_class.resolve_label(client, "Missing") }
+        .to raise_error(LinearToonMcp::Error, /\ALabel not found: Missing\z/)
     end
   end
 
@@ -92,6 +120,18 @@ RSpec.describe LinearToonMcp::Resolvers do
     it "passes through UUIDs without querying" do
       result = described_class.resolve_labels(client, [uuid])
       expect(result).to eq([uuid])
+    end
+
+    it "forwards team_id to each per-label lookup" do
+      allow(client).to receive(:query).and_return("issueLabels" => {"nodes" => [{"id" => "l1"}]})
+      described_class.resolve_labels(client, ["bug"], team_id: "team-uuid")
+      expect(client).to have_received(:query).with(
+        anything,
+        variables: hash_including(filter: hash_including(or: [
+          {team: {null: true}},
+          {team: {id: {eq: "team-uuid"}}}
+        ]))
+      )
     end
   end
 

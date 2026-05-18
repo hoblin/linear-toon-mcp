@@ -150,7 +150,7 @@ module LinearToonMcp
         end
 
         def needs_team_id?(kwargs)
-          kwargs.key?(:state) || kwargs.key?(:cycle)
+          kwargs.key?(:state) || kwargs.key?(:cycle) || kwargs.key?(:labels)
         end
 
         def build_input(input, client, team_id, kwargs)
@@ -179,7 +179,7 @@ module LinearToonMcp
         def add_resolved_fields(input, client, team_id, kwargs)
           input[:teamId] = team_id if kwargs.key?(:team) && team_id
           input[:stateId] = Resolvers.resolve_state(client, team_id, kwargs[:state]) if kwargs.key?(:state) && team_id
-          input[:labelIds] = Resolvers.resolve_labels(client, kwargs[:labels]) if kwargs.key?(:labels)
+          input[:labelIds] = Resolvers.resolve_labels(client, kwargs[:labels], team_id:) if kwargs.key?(:labels)
           project_id = nil
           if kwargs.key?(:project) && kwargs[:project]
             project_id = Resolvers.resolve_project(client, kwargs[:project])

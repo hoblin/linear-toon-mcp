@@ -131,7 +131,7 @@ module LinearToonMcp
           project: nil, cycle: nil, milestone: nil, delegate: nil, **)
           input[:assigneeId] = Resolvers.resolve_user(client, delegate || assignee) if assignee || delegate
           input[:stateId] = Resolvers.resolve_state(client, team_id, state) if state
-          input[:labelIds] = Resolvers.resolve_labels(client, labels) if labels
+          input[:labelIds] = Resolvers.resolve_labels(client, labels, team_id:) if labels
           project_id = Resolvers.resolve_project(client, project) if project
           input[:projectId] = project_id if project_id
           input[:cycleId] = Resolvers.resolve_cycle(client, team_id, cycle) if cycle
