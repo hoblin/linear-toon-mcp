@@ -35,7 +35,7 @@ module LinearToonMcp
         # @return [MCP::Tool::Response] TOON-encoded status list or error
         def call(team:, server_context: nil)
           client = server_context&.dig(:client) or raise Error, "client missing from server_context"
-          team_id = Resolvers.resolve_team(client, team)
+          team_id = Resolvers::TeamResolver.call(client, team)
           data = client.query(QUERY, variables: {filter: {team: {id: {eq: team_id}}}})
           states = data["workflowStates"] or raise Error, "Unexpected response: missing workflowStates field"
           text = Toon.encode(states)

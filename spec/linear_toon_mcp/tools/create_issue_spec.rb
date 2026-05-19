@@ -22,7 +22,7 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
     end
 
     before do
-      allow(LinearToonMcp::Resolvers).to receive(:resolve_team).with(client, team_id).and_return(team_id)
+      allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, team_id).and_return(team_id)
       allow(client).to receive(:query).and_return(
         "issueCreate" => {"success" => true, "issue" => issue_data}
       )
@@ -61,12 +61,12 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
       let(:params) { {title: "New issue", team: "Engineering", assignee: "Alice", state: "In Progress", labels: ["bug", "urgent"], project: "My Project", cycle: "Sprint 5"} }
 
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_team).with(client, "Engineering").and_return(team_id)
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_user).with(client, "Alice").and_return("user-uuid")
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_state).with(client, team_id, "In Progress").and_return("state-uuid")
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_labels).with(client, ["bug", "urgent"], team_id: team_id).and_return(["l1", "l2"])
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_project).with(client, "My Project").and_return("proj-uuid")
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_cycle).with(client, team_id, "Sprint 5").and_return("cycle-uuid")
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, "Engineering").and_return(team_id)
+        allow(LinearToonMcp::Resolvers::UserResolver).to receive(:call).with(client, "Alice").and_return("user-uuid")
+        allow(LinearToonMcp::Resolvers::WorkflowStateResolver).to receive(:call).with(client, "In Progress", team_id: team_id).and_return("state-uuid")
+        allow(LinearToonMcp::Resolvers::IssueLabelResolver).to receive(:call_many).with(client, ["bug", "urgent"], team_id: team_id).and_return(["l1", "l2"])
+        allow(LinearToonMcp::Resolvers::ProjectResolver).to receive(:call).with(client, "My Project").and_return("proj-uuid")
+        allow(LinearToonMcp::Resolvers::CycleResolver).to receive(:call).with(client, "Sprint 5", team_id: team_id).and_return("cycle-uuid")
       end
 
       it "resolves names and passes IDs to mutation" do
@@ -85,8 +85,8 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
       let(:params) { {title: "New issue", team: team_id, project: "My Project", milestone: "MVP"} }
 
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_project).with(client, "My Project").and_return("proj-uuid")
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_milestone).with(client, "proj-uuid", "MVP").and_return("ms-uuid")
+        allow(LinearToonMcp::Resolvers::ProjectResolver).to receive(:call).with(client, "My Project").and_return("proj-uuid")
+        allow(LinearToonMcp::Resolvers::ProjectMilestoneResolver).to receive(:call).with(client, "MVP", project_id: "proj-uuid").and_return("ms-uuid")
       end
 
       it "resolves milestone using project_id" do
@@ -102,7 +102,7 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
       let(:params) { {title: "New issue", team: team_id, delegate: "Alice"} }
 
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_user).with(client, "Alice").and_return("user-uuid")
+        allow(LinearToonMcp::Resolvers::UserResolver).to receive(:call).with(client, "Alice").and_return("user-uuid")
       end
 
       it "resolves delegate as user" do
@@ -273,7 +273,7 @@ RSpec.describe LinearToonMcp::Tools::CreateIssue do
       let(:params) { {title: "New issue", team: "Missing"} }
 
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_team).and_raise(LinearToonMcp::Error, "Team not found: Missing")
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).and_raise(LinearToonMcp::Error, "Team not found: Missing")
       end
 
       it "returns an error response" do

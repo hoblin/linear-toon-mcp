@@ -80,9 +80,9 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       let(:params) { {id: issue_id, team: "Engineering", assignee: "Alice", state: "Done"} }
 
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_team).with(client, "Engineering").and_return("team-uuid")
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_user).with(client, "Alice").and_return("user-uuid")
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_state).with(client, "team-uuid", "Done").and_return("state-uuid")
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, "Engineering").and_return("team-uuid")
+        allow(LinearToonMcp::Resolvers::UserResolver).to receive(:call).with(client, "Alice").and_return("user-uuid")
+        allow(LinearToonMcp::Resolvers::WorkflowStateResolver).to receive(:call).with(client, "Done", team_id: "team-uuid").and_return("state-uuid")
       end
 
       it "resolves names to IDs" do
@@ -100,7 +100,7 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       before do
         allow(client).to receive(:query).with(described_class::ISSUE_TEAM_QUERY, variables: {id: issue_id})
           .and_return("issue" => {"team" => {"id" => "fetched-team-uuid"}})
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_labels)
+        allow(LinearToonMcp::Resolvers::IssueLabelResolver).to receive(:call_many)
           .with(client, ["Bug"], team_id: "fetched-team-uuid").and_return(["label-uuid"])
         allow(client).to receive(:query).with(described_class::MUTATION, anything)
           .and_return("issueUpdate" => {"success" => true, "issue" => issue_data})
@@ -109,7 +109,7 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       it "fetches issue team and resolves labels scoped to it" do
         response
         expect(client).to have_received(:query).with(described_class::ISSUE_TEAM_QUERY, variables: {id: issue_id})
-        expect(LinearToonMcp::Resolvers).to have_received(:resolve_labels).with(client, ["Bug"], team_id: "fetched-team-uuid")
+        expect(LinearToonMcp::Resolvers::IssueLabelResolver).to have_received(:call_many).with(client, ["Bug"], team_id: "fetched-team-uuid")
       end
     end
 
@@ -119,7 +119,7 @@ RSpec.describe LinearToonMcp::Tools::UpdateIssue do
       before do
         allow(client).to receive(:query).with(described_class::ISSUE_TEAM_QUERY, variables: {id: issue_id})
           .and_return("issue" => {"team" => {"id" => "fetched-team-uuid"}})
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_state).with(client, "fetched-team-uuid", "Done").and_return("state-uuid")
+        allow(LinearToonMcp::Resolvers::WorkflowStateResolver).to receive(:call).with(client, "Done", team_id: "fetched-team-uuid").and_return("state-uuid")
         allow(client).to receive(:query).with(described_class::MUTATION, anything)
           .and_return("issueUpdate" => {"success" => true, "issue" => issue_data})
       end

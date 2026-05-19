@@ -37,13 +37,13 @@ RSpec.describe LinearToonMcp::Tools::ListIssueLabels do
       let(:team_id) { "12345678-1234-1234-1234-123456789012" }
 
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_team).with(client, "Engineering").and_return(team_id)
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, "Engineering").and_return(team_id)
         allow(client).to receive(:query).and_return("issueLabels" => labels_data)
       end
 
       it "resolves the team and queries with team filter" do
         response
-        expect(LinearToonMcp::Resolvers).to have_received(:resolve_team).with(client, "Engineering")
+        expect(LinearToonMcp::Resolvers::TeamResolver).to have_received(:call).with(client, "Engineering")
         expect(client).to have_received(:query).with(
           described_class::QUERY,
           variables: {filter: {team: {id: {eq: team_id}}}}
@@ -62,13 +62,13 @@ RSpec.describe LinearToonMcp::Tools::ListIssueLabels do
       let(:team_id) { "12345678-1234-1234-1234-123456789012" }
 
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_team).with(client, team_id).and_return(team_id)
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, team_id).and_return(team_id)
         allow(client).to receive(:query).and_return("issueLabels" => labels_data)
       end
 
       it "passes UUID through the resolver" do
         response
-        expect(LinearToonMcp::Resolvers).to have_received(:resolve_team).with(client, team_id)
+        expect(LinearToonMcp::Resolvers::TeamResolver).to have_received(:call).with(client, team_id)
       end
     end
 
@@ -87,7 +87,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssueLabels do
       let(:params) { {team: "Missing"} }
 
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_team)
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call)
           .and_raise(LinearToonMcp::Error, "Team not found: Missing")
       end
 

@@ -20,13 +20,13 @@ RSpec.describe LinearToonMcp::Tools::ListIssueStatuses do
     end
 
     before do
-      allow(LinearToonMcp::Resolvers).to receive(:resolve_team).with(client, team).and_return(team_id)
+      allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, team).and_return(team_id)
       allow(client).to receive(:query).and_return("workflowStates" => states_data)
     end
 
     it "resolves the team and queries workflow states" do
       response
-      expect(LinearToonMcp::Resolvers).to have_received(:resolve_team).with(client, team)
+      expect(LinearToonMcp::Resolvers::TeamResolver).to have_received(:call).with(client, team)
       expect(client).to have_received(:query).with(
         described_class::QUERY,
         variables: {filter: {team: {id: {eq: team_id}}}}
@@ -46,12 +46,12 @@ RSpec.describe LinearToonMcp::Tools::ListIssueStatuses do
       let(:team) { "12345678-1234-1234-1234-123456789012" }
 
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_team).with(client, team).and_return(team)
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, team).and_return(team)
       end
 
       it "passes UUID through the resolver" do
         response
-        expect(LinearToonMcp::Resolvers).to have_received(:resolve_team).with(client, team)
+        expect(LinearToonMcp::Resolvers::TeamResolver).to have_received(:call).with(client, team)
       end
     end
 
@@ -68,7 +68,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssueStatuses do
 
     context "when team not found" do
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_team)
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call)
           .and_raise(LinearToonMcp::Error, "Team not found: Missing")
       end
 
@@ -102,7 +102,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssueStatuses do
 
     context "when the API returns an error" do
       before do
-        allow(LinearToonMcp::Resolvers).to receive(:resolve_team).and_return(team_id)
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).and_return(team_id)
         allow(client).to receive(:query).and_raise(LinearToonMcp::Error, "HTTP 400: Bad request")
       end
 
