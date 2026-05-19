@@ -57,6 +57,12 @@ claude mcp add linear-toon -e LINEAR_API_KEY=lin_api_xxxxx -- linear-toon-mcp
 | `update_issue` | Update an existing Linear issue by ID. Supports partial updates, null to remove fields, and relation replacement. Relation params (`blocks`, `relatedTo`, `duplicateOf`) and `parentId` accept either issue UUIDs or human identifiers (e.g., `LIN-123`). Label names resolve against the issue's team or workspace-wide labels. |
 | `create_comment` | Create a comment on a Linear issue. Supports Markdown content and threaded replies via parentId. |
 | `list_comments` | List comments for a specific Linear issue in chronological order. Returns each comment's id, body, author, and timestamps. |
+| `list_initiatives` | List initiatives with filters (status, owner, parent initiative, date ranges) and cursor-based pagination. Optional `includeProjects` adds linked projects. |
+| `get_initiative` | Retrieve a Linear initiative by name or ID. Returns linked projects (id and name). Optional `includeSubInitiatives`. |
+| `save_initiative` | Create or update a Linear initiative (id presence determines). Resolves `owner` and `parentInitiative` names to IDs. Exposes both `description` (short summary, ~255 chars) and `content` (long Markdown). |
+| `delete_initiative` | Delete an initiative by name or ID. Hard-deletes via `initiativeDelete` by default; `archive: true` soft-deletes via `initiativeArchive`. Hard delete is refused while projects are still linked — unlink first or archive. |
+| `add_project_to_initiative` | Link a project to an initiative. Accepts names or UUIDs for both. |
+| `remove_project_from_initiative` | Unlink a project from an initiative. Accepts names or UUIDs for both; finds and deletes the underlying join record. |
 
 ## Development
 

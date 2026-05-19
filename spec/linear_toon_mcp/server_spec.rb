@@ -42,7 +42,13 @@ RSpec.describe LinearToonMcp, ".server" do
         include(name: "create_comment", description: "Create a comment on a Linear issue"),
         include(name: "list_comments", description: "List comments for a specific Linear issue"),
         include(name: "create_issue", description: "Create a new Linear issue"),
-        include(name: "update_issue", description: "Update an existing Linear issue")
+        include(name: "update_issue", description: "Update an existing Linear issue"),
+        include(name: "list_initiatives", description: "List initiatives with optional filters and pagination"),
+        include(name: "get_initiative", description: "Retrieve a Linear initiative by name or ID, with linked projects"),
+        include(name: "save_initiative", description: "Create or update a Linear initiative (id presence determines)"),
+        include(name: "delete_initiative", description: "Delete a Linear initiative (hard by default; archive: true soft-deletes)"),
+        include(name: "add_project_to_initiative", description: "Link a project to an initiative"),
+        include(name: "remove_project_from_initiative", description: "Unlink a project from an initiative")
       )
     end
   end
