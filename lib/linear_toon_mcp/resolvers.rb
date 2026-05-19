@@ -4,12 +4,6 @@ module LinearToonMcp
   # Resolvers translate human-friendly identifiers — UUIDs, names, emails,
   # slugs, numbers, the literal "me" — into Linear API UUIDs.
   #
-  # Each entity is a subclass of {Base}. Connection name, filter type, and
-  # not-found label derive from the class name by convention; subclasses
-  # declare which lookup attributes apply via {Base.lookup_by} (drawn from the
-  # {Base::ATTRIBUTES} catalog), any required parent scope via
-  # {Base.scoped_by}, and optional non-filter shortcuts via {Base.shortcut}.
-  #
   # @example
   #   Resolvers::TeamResolver.call(client, "Engineering")
   #   Resolvers::WorkflowStateResolver.call(client, "In Progress", team_id: tid)

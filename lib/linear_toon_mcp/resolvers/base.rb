@@ -2,36 +2,24 @@
 
 module LinearToonMcp
   module Resolvers
-    # Convention-over-configuration base for entity resolvers.
+    # Base class for entity resolvers. Subclasses declare their lookup
+    # attributes and any required parent scope.
     #
-    # Derived from the class name (with the trailing +Resolver+ stripped — e.g.
-    # +WorkflowStateResolver+ → +"WorkflowState"+):
+    # Defaults derive from the class name with +Resolver+ stripped:
     #
-    # - {.connection_name} — the GraphQL connection field (+"workflowStates"+)
-    # - {.filter_type_name} — the GraphQL filter input type (+"WorkflowStateFilter"+)
-    # - {.entity_label} — the not-found label, using the trailing CamelCase
-    #   word (+"State"+)
+    #   WorkflowStateResolver.connection_name   # => "workflowStates"
+    #   WorkflowStateResolver.filter_type_name  # => "WorkflowStateFilter"
+    #   WorkflowStateResolver.entity_label      # => "State"
     #
-    # Override any of those via {.connection}, {.filter_type}, {.label}.
-    #
-    # Resolution order:
-    #
-    # 1. UUIDs pass through unchanged.
-    # 2. A configured {.shortcut} can intercept a literal token (e.g. +"me"+).
-    # 3. Each {.lookup_by} attribute is tried in declared order; its predicate
-    #    decides whether to attempt it for the current value, and its filter
-    #    is merged with any {.scoped_by} scope filter.
-    # 4. The first lookup that returns a node wins.
-    # 5. Otherwise raise {LinearToonMcp::Error} with {#not_found_message}.
+    # Override any default via {.connection}, {.filter_type}, or {.label}.
     class Base
-      # Catalog of well-known lookup attributes. Each entry pairs a predicate
-      # (does this value look like the attribute?) with a filter builder.
       # Linear workflow state type enum.
       WORKFLOW_STATE_TYPE_RE = /\A(backlog|unstarted|started|completed|canceled|triage)\z/
 
       # Linear team key format.
       TEAM_KEY_RE = /\A[A-Z][A-Z0-9_-]*\z/
 
+      # Lookup attribute catalog: value predicate paired with GraphQL filter builder.
       ATTRIBUTES = {
         name: {
           matches: ->(_v) { true },
@@ -59,7 +47,7 @@ module LinearToonMcp
         }
       }.freeze
 
-      # Built-in non-filter shortcut handlers. Subclasses opt in via {.shortcut}.
+      # Non-filter shortcut handlers.
       SHORTCUTS = {
         viewer: lambda { |client|
           data = client.query("query { viewer { id } }")
@@ -68,17 +56,26 @@ module LinearToonMcp
       }.freeze
 
       class << self
-        # DSL --------------------------------------------------------------
-
-        # Declare ordered lookup attributes. Symbols draw from {ATTRIBUTES}.
-        # @param attrs [Array<Symbol>]
+        # Declares lookup attributes for this resolver, in priority order.
+        #
+        #   class TeamResolver < Base
+        #     lookup_by :key, :name
+        #   end
+        #
+        # @param attrs [Array<Symbol>] attribute names from {ATTRIBUTES}
         def lookup_by(*attrs)
           @attributes = attrs.freeze
         end
 
-        # Declare a parent-scoping kwarg expected by {.call}.
-        # The kwarg name (e.g. +:team_id+) implies the GraphQL filter key
-        # (+:team+ → +{team: {id: {eq: value}}}+).
+        # Declares a parent-scoping kwarg expected by {.call}. The kwarg name
+        # implies the GraphQL filter key — +:team_id+ produces
+        # +{team: {id: {eq: value}}}+.
+        #
+        #   class CycleResolver < Base
+        #     scoped_by :team_id
+        #     lookup_by :name
+        #   end
+        #
         # @param key [Symbol] kwarg name passed to {.call}
         # @param optional [Boolean] omit the scope filter when scope arg is nil
         # @param workspace_fallback [Boolean] when set, the scope filter becomes
@@ -88,61 +85,72 @@ module LinearToonMcp
           @scope_config = {key: key, optional: optional, workspace_fallback: workspace_fallback}.freeze
         end
 
-        # Declare a literal token that short-circuits to a non-filter lookup.
+        # Declares a literal token that bypasses filter lookup.
+        #
+        #   class UserResolver < Base
+        #     shortcut "me", via: :viewer
+        #     lookup_by :name
+        #   end
+        #
         # @param token [String] literal value to match (e.g. +"me"+)
-        # @param via [Symbol, Proc] built-in handler (+:viewer+) or a custom
-        #   callable receiving the client and returning a UUID
+        # @param via [Symbol, Proc] built-in handler (+:viewer+) or a callable
+        #   receiving the client and returning a UUID
         def shortcut(token, via:)
           @shortcut_config = {token: token, via: via}.freeze
         end
 
-        # Override the derived GraphQL connection name.
+        # Overrides the derived GraphQL connection name.
         def connection(name)
           @connection = name.to_s
         end
 
-        # Override the derived GraphQL filter type name.
+        # Overrides the derived GraphQL filter type name.
         def filter_type(name)
           @filter_type = name.to_s
         end
 
-        # Override the derived not-found label.
+        # Overrides the derived not-found label.
         def label(name)
           @label = name.to_s
         end
 
-        # Accessors --------------------------------------------------------
-
-        # @return [Array<Symbol>] attributes declared via {.lookup_by}
+        # Returns the attributes declared via {.lookup_by}.
         def attributes
           @attributes || []
         end
 
         attr_reader :scope_config, :shortcut_config
 
-        # Derived names ----------------------------------------------------
-
-        # @return [String] e.g. +"workflowStates"+ for +WorkflowStateResolver+
+        # Returns the GraphQL connection name.
+        #
+        #   WorkflowStateResolver.connection_name  # => "workflowStates"
         def connection_name
           @connection ||= "#{entity_name[0].downcase}#{entity_name[1..]}s"
         end
 
-        # @return [String] e.g. +"WorkflowStateFilter"+
+        # Returns the GraphQL filter input type name.
+        #
+        #   WorkflowStateResolver.filter_type_name  # => "WorkflowStateFilter"
         def filter_type_name
           @filter_type ||= "#{entity_name}Filter"
         end
 
-        # @return [String] trailing CamelCase word — e.g. +"State"+ for +"WorkflowState"+
+        # Returns the not-found label — the trailing CamelCase word of
+        # {.entity_name}.
+        #
+        #   WorkflowStateResolver.entity_label  # => "State"
         def entity_label
           @label ||= entity_name.scan(/[A-Z][a-z]+/).last || entity_name
         end
 
-        # @return [String] class name with +Resolver+ stripped
+        # Returns the class name with +Resolver+ stripped.
+        #
+        #   WorkflowStateResolver.entity_name  # => "WorkflowState"
         def entity_name
           @entity_name ||= name.split("::").last.sub(/Resolver\z/, "")
         end
 
-        # @return [String] memoized GraphQL query
+        # Returns the memoized GraphQL query.
         def query
           @query ||= <<~GRAPHQL
             query($filter: #{filter_type_name}) {
@@ -151,22 +159,24 @@ module LinearToonMcp
           GRAPHQL
         end
 
-        # Entry points -----------------------------------------------------
-
+        # Resolves +value+ to a UUID.
+        #
+        #   TeamResolver.call(client, "Engineering")             # => "uuid…"
+        #   WorkflowStateResolver.call(client, "Done", team_id: tid)
+        #
         # @param client [Client]
         # @param value [String]
-        # @param scope [Hash] parent-scoping kwargs
+        # @param scope [Hash] parent-scope kwargs (e.g. +team_id:+)
         # @return [String] resolved UUID
         # @raise [Error] when no attribute resolves the value
         def call(client, value, **scope)
           new(client, **scope).resolve(value)
         end
 
-        # Batch convenience — resolves each value via {.call}. Scope kwargs
-        # are forwarded to every per-value lookup.
-        # @param client [Client]
-        # @param values [Array<String>]
-        # @param scope [Hash] parent-scoping kwargs forwarded to each {.call}
+        # Resolves each value via {.call}, forwarding scope.
+        #
+        #   IssueLabelResolver.call_many(client, ["bug", "p1"], team_id: tid)
+        #
         # @return [Array<String>]
         def call_many(client, values, **scope)
           values.map { |v| call(client, v, **scope) }
@@ -178,6 +188,12 @@ module LinearToonMcp
         @scope = scope
       end
 
+      # Resolves +value+ to a UUID. UUIDs pass through unchanged; a configured
+      # shortcut token dispatches to its handler; otherwise each {.lookup_by}
+      # attribute is tried in declared order and the first GraphQL lookup that
+      # returns a node wins.
+      #
+      # @raise [Error] when nothing resolves +value+
       def resolve(value)
         return value if value.match?(UUID_RE)
         return apply_shortcut if shortcut_match?(value)
