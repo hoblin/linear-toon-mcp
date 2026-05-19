@@ -67,6 +67,12 @@ claude mcp add linear-toon -e LINEAR_API_KEY=lin_api_xxxxx -- linear-toon-mcp
 | `get_status_update` | Retrieve a status update by ID. Works for both project and initiative updates — internally tries each. |
 | `save_status_update` | Create or update a status update on a project or initiative (id presence determines). `health` enum: `onTrack` / `atRisk` / `offTrack`. Body is Markdown. |
 | `delete_status_update` | Archive a status update by ID. Linear has no hard-delete for status updates; this maps to `*UpdateArchive`. |
+| `save_project` | Create or update a Linear project (id presence determines). On create, `name` and `teams` (one or more) are required. Resolves names to IDs for teams, lead, members, labels, status, and initiative (initiative is create-only and links the project on creation). |
+| `archive_project` | Archive a Linear project (recoverable soft delete via `projectArchive`). Accepts a project name or UUID. Linear has no hard-delete for projects. |
+| `get_team` | Retrieve a Linear team by id, key (e.g., `VIB`), or name. |
+| `get_user` | Retrieve a Linear user by id, name, email, or `"me"`. |
+| `get_issue_status` | Retrieve a workflow state (issue status) by name or UUID, scoped to a team. |
+| `create_issue_label` | Create a Linear issue label. Omit `team` to create a workspace-wide label. |
 
 ## Development
 
