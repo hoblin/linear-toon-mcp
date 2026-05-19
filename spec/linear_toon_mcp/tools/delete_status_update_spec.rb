@@ -67,6 +67,15 @@ RSpec.describe LinearToonMcp::Tools::DeleteStatusUpdate do
   end
 
   describe "lookup failure" do
+    it "propagates non-not-found errors raised during lookup" do
+      allow(client).to receive(:query)
+        .with(a_string_matching(/projectUpdate\(id:/), anything)
+        .and_raise(LinearToonMcp::Error, "HTTP 502: Bad gateway")
+      response = described_class.call(id: "pu-1")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("HTTP 502")
+    end
+
     it "raises a not-found error when the id matches neither project nor initiative" do
       allow(client).to receive(:query)
         .with(a_string_matching(/projectUpdate\(id:/), anything)

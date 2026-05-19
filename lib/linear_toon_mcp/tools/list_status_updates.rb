@@ -86,7 +86,7 @@ module LinearToonMcp
       private
 
       def exactly_one_parent(project:, initiative:)
-        raise Error, "Provide exactly one of project: or initiative:" if (project && initiative) || (!project && !initiative)
+        raise Error, "Provide exactly one of `project` or `initiative`" if (project && initiative) || (!project && !initiative)
         project ? [:project, project] : [:initiative, initiative]
       end
 

@@ -45,6 +45,19 @@ RSpec.describe LinearToonMcp::Tools::GetStatusUpdate do
       expect(response).not_to be_error
     end
 
+    it "re-raises non-not-found errors from initiativeUpdate" do
+      allow(client).to receive(:query)
+        .with(a_string_matching(/projectUpdate\(id:/), anything)
+        .and_return("projectUpdate" => nil)
+      allow(client).to receive(:query)
+        .with(a_string_matching(/initiativeUpdate\(id:/), anything)
+        .and_raise(LinearToonMcp::Error, "HTTP 502: Bad gateway")
+
+      response = described_class.call(id: "anything")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("HTTP 502")
+    end
+
     it "re-raises non-not-found errors from projectUpdate" do
       allow(client).to receive(:query)
         .with(a_string_matching(/projectUpdate\(id:/), anything)

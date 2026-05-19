@@ -2,10 +2,8 @@
 
 module LinearToonMcp
   module Tools
-    # Create or update a status update on a Linear project or initiative.
-    # When +id+ is present, updates the existing record; otherwise creates
-    # a new one. Exactly one of +project:+ or +initiative:+ identifies the
-    # parent.
+    # Create or update a status update on a project or initiative.
+    # +id+ presence determines create vs update; exactly one parent required.
     class SaveStatusUpdate < Base
       description "Create or update a project or initiative status update"
 
@@ -108,15 +106,15 @@ module LinearToonMcp
       private
 
       def exactly_one_parent(project:, initiative:)
-        raise Error, "Provide exactly one of project: or initiative:" if (project && initiative) || (!project && !initiative)
+        raise Error, "Provide exactly one of `project` or `initiative`" if (project && initiative) || (!project && !initiative)
         project ? [:project, project] : [:initiative, initiative]
       end
 
       def build_input(fields)
         input = {}
-        input[:body] = fields[:body] if fields.key?(:body)
-        input[:health] = fields[:health] if fields.key?(:health)
-        input[:isDiffHidden] = fields[:isDiffHidden] if fields.key?(:isDiffHidden)
+        {body: :body, health: :health, isDiffHidden: :isDiffHidden}.each do |key, field|
+          input[field] = fields[key] if fields.key?(key)
+        end
         input
       end
 

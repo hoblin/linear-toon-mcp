@@ -65,8 +65,8 @@ module LinearToonMcp
         data = client.query(PROJECT_UPDATE_QUERY, variables: {id: id})
         data["projectUpdate"]
       rescue Error => e
-        # Linear surfaces missing records as a GraphQL "Entity not found"
-        # error; swallow only that case so the fallback gets a turn.
+        # Linear returns "Entity not found" for missing records; fall
+        # through to try the other parent type in that case.
         raise unless e.message.include?("Entity not found")
       end
 

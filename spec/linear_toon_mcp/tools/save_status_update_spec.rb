@@ -11,13 +11,13 @@ RSpec.describe LinearToonMcp::Tools::SaveStatusUpdate do
     it "rejects calls with neither project: nor initiative:" do
       response = described_class.call(body: "hi")
       expect(response).to be_a(MCP::Tool::Response).and be_error
-      expect(response.content.first[:text]).to include("exactly one of project: or initiative:")
+      expect(response.content.first[:text]).to include("exactly one of `project` or `initiative`")
     end
 
     it "rejects calls with both project: and initiative:" do
       response = described_class.call(project: "P", initiative: "I", body: "hi")
       expect(response).to be_a(MCP::Tool::Response).and be_error
-      expect(response.content.first[:text]).to include("exactly one of project: or initiative:")
+      expect(response.content.first[:text]).to include("exactly one of `project` or `initiative`")
     end
   end
 
@@ -113,6 +113,31 @@ RSpec.describe LinearToonMcp::Tools::SaveStatusUpdate do
       response = described_class.call(project: "P", body: "x")
       expect(response).to be_error
       expect(response.content.first[:text]).to include("no result returned")
+    end
+
+    it "raises when the update mutation reports success: false" do
+      allow(client).to receive(:query)
+        .and_return("projectUpdateUpdate" => {"success" => false, "projectUpdate" => nil})
+      response = described_class.call(id: "pu-1", project: "P", body: "edit")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Status update update failed")
+    end
+
+    it "raises when the update response is missing the mutation key" do
+      allow(client).to receive(:query).and_return({})
+      response = described_class.call(id: "pu-1", project: "P", body: "edit")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Status update update failed: no result returned")
+    end
+  end
+
+  describe "resolver errors" do
+    it "surfaces project resolution errors" do
+      allow(LinearToonMcp::Resolvers::Project).to receive(:call)
+        .and_raise(LinearToonMcp::Error, "Project not found: Missing")
+      response = described_class.call(project: "Missing", body: "x")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Project not found")
     end
   end
 end

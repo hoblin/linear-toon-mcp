@@ -12,13 +12,13 @@ RSpec.describe LinearToonMcp::Tools::ListStatusUpdates do
     it "rejects calls with neither project: nor initiative:" do
       response = described_class.call
       expect(response).to be_a(MCP::Tool::Response).and be_error
-      expect(response.content.first[:text]).to include("exactly one of project: or initiative:")
+      expect(response.content.first[:text]).to include("exactly one of `project` or `initiative`")
     end
 
     it "rejects calls with both project: and initiative:" do
       response = described_class.call(project: "P", initiative: "I")
       expect(response).to be_a(MCP::Tool::Response).and be_error
-      expect(response.content.first[:text]).to include("exactly one of project: or initiative:")
+      expect(response.content.first[:text]).to include("exactly one of `project` or `initiative`")
     end
   end
 
@@ -52,6 +52,24 @@ RSpec.describe LinearToonMcp::Tools::ListStatusUpdates do
         anything,
         variables: hash_including(first: 250, after: "abc")
       )
+    end
+  end
+
+  describe "resolver errors" do
+    it "surfaces project resolution errors" do
+      allow(LinearToonMcp::Resolvers::Project).to receive(:call)
+        .and_raise(LinearToonMcp::Error, "Project not found: Missing")
+      response = described_class.call(project: "Missing")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Project not found")
+    end
+
+    it "surfaces initiative resolution errors" do
+      allow(LinearToonMcp::Resolvers::Initiative).to receive(:call)
+        .and_raise(LinearToonMcp::Error, "Initiative not found: Missing")
+      response = described_class.call(initiative: "Missing")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Initiative not found")
     end
   end
 

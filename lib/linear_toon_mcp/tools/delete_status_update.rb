@@ -3,8 +3,7 @@
 module LinearToonMcp
   module Tools
     # Archive a status update by id. Linear has no hard-delete mutation
-    # for status updates — archiving is the canonical "delete" operation
-    # and matches the official Linear MCP server's behaviour.
+    # for status updates — archiving is the canonical "delete" operation.
     # Determines the parent type (project vs initiative) by lookup, then
     # calls the corresponding archive mutation.
     class DeleteStatusUpdate < Base
