@@ -66,7 +66,7 @@ module LinearToonMcp
         # @return [MCP::Tool::Response] TOON-encoded project or error
         def call(query:, includeMembers: false, includeMilestones: false, includeResources: false, server_context: nil)
           client = server_context&.dig(:client) or raise Error, "client missing from server_context"
-          project_id = Resolvers::ProjectResolver.call(client, query)
+          project_id = Resolvers::ProjectResolver.call(client, value: query)
           graphql = build_query(includeMembers:, includeMilestones:, includeResources:)
           data = client.query(graphql, variables: {id: project_id})
           project = data["project"] or raise Error, "Project not found: #{query}"

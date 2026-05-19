@@ -38,13 +38,13 @@ RSpec.describe LinearToonMcp::Tools::ListProjects do
       let(:team_id) { "12345678-1234-1234-1234-123456789012" }
 
       before do
-        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, "Engineering").and_return(team_id)
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, value: "Engineering").and_return(team_id)
         allow(client).to receive(:query).and_return("projects" => projects_data)
       end
 
       it "resolves the team and queries with team filter" do
         response
-        expect(LinearToonMcp::Resolvers::TeamResolver).to have_received(:call).with(client, "Engineering")
+        expect(LinearToonMcp::Resolvers::TeamResolver).to have_received(:call).with(client, value: "Engineering")
         expect(client).to have_received(:query).with(
           described_class::QUERY,
           variables: {filter: {accessibleTeams: {id: {eq: team_id}}}}
@@ -63,13 +63,13 @@ RSpec.describe LinearToonMcp::Tools::ListProjects do
       let(:team_id) { "12345678-1234-1234-1234-123456789012" }
 
       before do
-        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, team_id).and_return(team_id)
+        allow(LinearToonMcp::Resolvers::TeamResolver).to receive(:call).with(client, value: team_id).and_return(team_id)
         allow(client).to receive(:query).and_return("projects" => projects_data)
       end
 
       it "passes UUID through the resolver" do
         response
-        expect(LinearToonMcp::Resolvers::TeamResolver).to have_received(:call).with(client, team_id)
+        expect(LinearToonMcp::Resolvers::TeamResolver).to have_received(:call).with(client, value: team_id)
       end
     end
 

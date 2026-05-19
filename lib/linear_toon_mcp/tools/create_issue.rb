@@ -84,7 +84,7 @@ module LinearToonMcp
           client = server_context&.dig(:client) or raise Error, "client missing from server_context"
           raise Error, "Cannot specify both assignee and delegate" if kwargs.key?(:assignee) && kwargs.key?(:delegate)
 
-          team_id = Resolvers::TeamResolver.call(client, team)
+          team_id = Resolvers::TeamResolver.call(client, value: team)
           input = {title:, teamId: team_id}
 
           add_direct_fields(input, **kwargs)
@@ -132,15 +132,15 @@ module LinearToonMcp
 
         def resolve_fields(input, client, team_id, assignee: nil, state: nil, labels: nil,
           project: nil, cycle: nil, milestone: nil, delegate: nil, **)
-          input[:assigneeId] = Resolvers::UserResolver.call(client, delegate || assignee) if assignee || delegate
-          input[:stateId] = Resolvers::WorkflowStateResolver.call(client, state, team_id:) if state
-          input[:labelIds] = Resolvers::IssueLabelResolver.call_many(client, labels, team_id:) if labels
-          project_id = Resolvers::ProjectResolver.call(client, project) if project
+          input[:assigneeId] = Resolvers::UserResolver.call(client, value: delegate || assignee) if assignee || delegate
+          input[:stateId] = Resolvers::WorkflowStateResolver.call(client, value: state, team_id:) if state
+          input[:labelIds] = Resolvers::IssueLabelResolver.call_many(client, values: labels, team_id:) if labels
+          project_id = Resolvers::ProjectResolver.call(client, value: project) if project
           input[:projectId] = project_id if project_id
-          input[:cycleId] = Resolvers::CycleResolver.call(client, cycle, team_id:) if cycle
+          input[:cycleId] = Resolvers::CycleResolver.call(client, value: cycle, team_id:) if cycle
           if milestone
             raise Error, "milestone requires project" unless project_id
-            input[:projectMilestoneId] = Resolvers::ProjectMilestoneResolver.call(client, milestone, project_id:)
+            input[:projectMilestoneId] = Resolvers::ProjectMilestoneResolver.call(client, value: milestone, project_id:)
           end
         end
 

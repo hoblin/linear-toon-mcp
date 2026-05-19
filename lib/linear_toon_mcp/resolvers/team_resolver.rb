@@ -2,7 +2,7 @@
 
 module LinearToonMcp
   module Resolvers
-    # Resolves a Linear team by UUID, key, or name.
+    # Resolves a Linear team by key or name.
     class TeamResolver < Base
       lookup_by :key, :name
     end

@@ -2,9 +2,9 @@
 
 module LinearToonMcp
   module Resolvers
-    # Resolves a Linear issue label by UUID or name. Optionally scoped to a
-    # team; when scoped, matches either the team's labels or workspace-wide
-    # labels (team +null+).
+    # Resolves a Linear issue label by name. Optionally scoped to a team;
+    # when scoped, matches either the team's labels or workspace-wide labels
+    # (team +null+).
     class IssueLabelResolver < Base
       scoped_by :team_id, optional: true, workspace_fallback: true
       lookup_by :name

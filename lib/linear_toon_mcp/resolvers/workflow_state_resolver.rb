@@ -2,8 +2,8 @@
 
 module LinearToonMcp
   module Resolvers
-    # Resolves a Linear workflow state (issue status) by UUID, type, or
-    # name. Team-scoped.
+    # Resolves a Linear workflow state (issue status) by type or name.
+    # Team-scoped.
     class WorkflowStateResolver < Base
       scoped_by :team_id
       lookup_by :type, :name

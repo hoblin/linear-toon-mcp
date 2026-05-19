@@ -34,19 +34,8 @@ RSpec.describe LinearToonMcp::Resolvers::Base do
         lookup_by :name
       end
       allow(client).to receive(:query).and_return("things" => {"nodes" => []})
-      expect { resolver.call(client, "Missing") }
+      expect { resolver.call(client, value: "Missing") }
         .to raise_error(LinearToonMcp::Error, /\AThing not found: Missing\z/)
-    end
-
-    it "honors a custom Proc shortcut handler" do
-      resolver = Class.new(described_class) do
-        connection "things"
-        filter_type "ThingFilter"
-        label "Thing"
-        shortcut "self", via: ->(_c) { "shortcut-uuid" }
-        lookup_by :name
-      end
-      expect(resolver.call(client, "self")).to eq("shortcut-uuid")
     end
   end
 end

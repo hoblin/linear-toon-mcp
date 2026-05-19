@@ -145,7 +145,7 @@ module LinearToonMcp
         end
 
         def resolve_team_id(client, issue_id, kwargs)
-          return Resolvers::TeamResolver.call(client, kwargs[:team]) if kwargs.key?(:team)
+          return Resolvers::TeamResolver.call(client, value: kwargs[:team]) if kwargs.key?(:team)
           return unless needs_team_id?(kwargs)
 
           data = client.query(ISSUE_TEAM_QUERY, variables: {id: issue_id})
@@ -171,10 +171,12 @@ module LinearToonMcp
 
         def add_nullable_fields(input, client, kwargs)
           if kwargs.key?(:assignee)
-            input[:assigneeId] = kwargs[:assignee] ? Resolvers::UserResolver.call(client, kwargs[:assignee]) : nil
+            input[:assigneeId] =
+              kwargs[:assignee] ? Resolvers::UserResolver.call(client, value: kwargs[:assignee]) : nil
           end
           if kwargs.key?(:delegate)
-            input[:assigneeId] = kwargs[:delegate] ? Resolvers::UserResolver.call(client, kwargs[:delegate]) : nil
+            input[:assigneeId] =
+              kwargs[:delegate] ? Resolvers::UserResolver.call(client, value: kwargs[:delegate]) : nil
           end
           input[:parentId] = kwargs[:parentId] if kwargs.key?(:parentId)
         end
@@ -183,24 +185,24 @@ module LinearToonMcp
           input[:teamId] = team_id if kwargs.key?(:team) && team_id
           if kwargs.key?(:state) && team_id
             input[:stateId] =
-              Resolvers::WorkflowStateResolver.call(client, kwargs[:state], team_id:)
+              Resolvers::WorkflowStateResolver.call(client, value: kwargs[:state], team_id:)
           end
           if kwargs.key?(:labels) && team_id
-            input[:labelIds] = Resolvers::IssueLabelResolver.call_many(client, kwargs[:labels], team_id:)
+            input[:labelIds] = Resolvers::IssueLabelResolver.call_many(client, values: kwargs[:labels], team_id:)
           end
           project_id = nil
           if kwargs.key?(:project) && kwargs[:project]
-            project_id = Resolvers::ProjectResolver.call(client, kwargs[:project])
+            project_id = Resolvers::ProjectResolver.call(client, value: kwargs[:project])
             input[:projectId] = project_id
           end
           if kwargs.key?(:milestone)
             raise Error, "milestone requires project" unless project_id
             input[:projectMilestoneId] =
-              Resolvers::ProjectMilestoneResolver.call(client, kwargs[:milestone], project_id:)
+              Resolvers::ProjectMilestoneResolver.call(client, value: kwargs[:milestone], project_id:)
           end
           if kwargs.key?(:cycle) && team_id
             input[:cycleId] =
-              Resolvers::CycleResolver.call(client, kwargs[:cycle], team_id:)
+              Resolvers::CycleResolver.call(client, value: kwargs[:cycle], team_id:)
           end
         end
 

@@ -32,7 +32,7 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
     end
 
     before do
-      allow(LinearToonMcp::Resolvers::ProjectResolver).to receive(:call).with(client, query).and_return(project_id)
+      allow(LinearToonMcp::Resolvers::ProjectResolver).to receive(:call).with(client, value: query).and_return(project_id)
       allow(client).to receive(:query).and_return("project" => project_data)
     end
 
@@ -45,7 +45,7 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
 
     it "resolves project by query and queries Linear" do
       response
-      expect(LinearToonMcp::Resolvers::ProjectResolver).to have_received(:call).with(client, "My Project")
+      expect(LinearToonMcp::Resolvers::ProjectResolver).to have_received(:call).with(client, value: "My Project")
       expect(client).to have_received(:query).with(
         a_string_matching(/project\(id: \$id\)/),
         variables: {id: project_id}
@@ -56,12 +56,12 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
       let(:query) { project_id }
 
       before do
-        allow(LinearToonMcp::Resolvers::ProjectResolver).to receive(:call).with(client, project_id).and_return(project_id)
+        allow(LinearToonMcp::Resolvers::ProjectResolver).to receive(:call).with(client, value: project_id).and_return(project_id)
       end
 
       it "passes UUID through resolver" do
         response
-        expect(LinearToonMcp::Resolvers::ProjectResolver).to have_received(:call).with(client, project_id)
+        expect(LinearToonMcp::Resolvers::ProjectResolver).to have_received(:call).with(client, value: project_id)
       end
     end
 
@@ -69,12 +69,12 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
       let(:query) { "my-project" }
 
       before do
-        allow(LinearToonMcp::Resolvers::ProjectResolver).to receive(:call).with(client, "my-project").and_return(project_id)
+        allow(LinearToonMcp::Resolvers::ProjectResolver).to receive(:call).with(client, value: "my-project").and_return(project_id)
       end
 
       it "resolves slug through resolver" do
         response
-        expect(LinearToonMcp::Resolvers::ProjectResolver).to have_received(:call).with(client, "my-project")
+        expect(LinearToonMcp::Resolvers::ProjectResolver).to have_received(:call).with(client, value: "my-project")
       end
     end
 

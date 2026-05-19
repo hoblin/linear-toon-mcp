@@ -42,7 +42,7 @@ module LinearToonMcp
           client = server_context&.dig(:client) or raise Error, "client missing from server_context"
 
           users = if team
-            team_id = Resolvers::TeamResolver.call(client, team)
+            team_id = Resolvers::TeamResolver.call(client, value: team)
             data = client.query(TEAM_MEMBERS_QUERY, variables: {id: team_id})
             data.dig("team", "members") or raise Error, "Unexpected response: missing team members field"
           else

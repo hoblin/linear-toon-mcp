@@ -2,10 +2,23 @@
 
 module LinearToonMcp
   module Resolvers
-    # Resolves a Linear user by UUID, email, name, or the literal +"me"+.
+    # Resolves a Linear user by email, name, or the literal +"me"+.
     class UserResolver < Base
-      shortcut "me", via: :viewer
+      VIEWER_QUERY = "query { viewer { id } }"
+
       lookup_by :email, :name
+
+      def resolve(value)
+        return resolve_viewer if value == "me"
+        super
+      end
+
+      private
+
+      def resolve_viewer
+        data = client.query(VIEWER_QUERY)
+        data.dig("viewer", "id") || raise(Error, "Could not resolve current user")
+      end
     end
   end
 end

@@ -3,7 +3,8 @@
 module LinearToonMcp
   module Resolvers
     # Base class for entity resolvers. Subclasses declare their lookup
-    # attributes and any required parent scope.
+    # attributes and any required parent scope. UUIDs always pass through
+    # unchanged regardless of the declared attributes.
     #
     # Defaults derive from the class name with +Resolver+ stripped:
     #
@@ -13,12 +14,6 @@ module LinearToonMcp
     #
     # Override any default via {.connection}, {.filter_type}, or {.label}.
     class Base
-      # Linear workflow state type enum.
-      WORKFLOW_STATE_TYPE_RE = /\A(backlog|unstarted|started|completed|canceled|triage)\z/
-
-      # Linear team key format.
-      TEAM_KEY_RE = /\A[A-Z][A-Z0-9_-]*\z/
-
       # Lookup attribute catalog: value predicate paired with GraphQL filter builder.
       ATTRIBUTES = {
         name: {
@@ -38,20 +33,12 @@ module LinearToonMcp
           filter: ->(v) { {slugId: {eqIgnoreCase: v}} }
         },
         key: {
-          matches: ->(v) { v.match?(TEAM_KEY_RE) },
+          matches: ->(v) { v.match?(/\A[A-Z]+\z/) },
           filter: ->(v) { {key: {eq: v}} }
         },
         type: {
-          matches: ->(v) { v.match?(WORKFLOW_STATE_TYPE_RE) },
+          matches: ->(v) { v.match?(/\A[a-z]+\z/) },
           filter: ->(v) { {type: {eq: v}} }
-        }
-      }.freeze
-
-      # Non-filter shortcut handlers.
-      SHORTCUTS = {
-        viewer: lambda { |client|
-          data = client.query("query { viewer { id } }")
-          data.dig("viewer", "id") || raise(Error, "Could not resolve current user")
         }
       }.freeze
 
@@ -85,20 +72,6 @@ module LinearToonMcp
           @scope_config = {key: key, optional: optional, workspace_fallback: workspace_fallback}.freeze
         end
 
-        # Declares a literal token that bypasses filter lookup.
-        #
-        #   class UserResolver < Base
-        #     shortcut "me", via: :viewer
-        #     lookup_by :name
-        #   end
-        #
-        # @param token [String] literal value to match (e.g. +"me"+)
-        # @param via [Symbol, Proc] built-in handler (+:viewer+) or a callable
-        #   receiving the client and returning a UUID
-        def shortcut(token, via:)
-          @shortcut_config = {token: token, via: via}.freeze
-        end
-
         # Overrides the derived GraphQL connection name.
         def connection(name)
           @connection = name.to_s
@@ -119,7 +92,7 @@ module LinearToonMcp
           @attributes || []
         end
 
-        attr_reader :scope_config, :shortcut_config
+        attr_reader :scope_config
 
         # Returns the GraphQL connection name.
         #
@@ -161,25 +134,25 @@ module LinearToonMcp
 
         # Resolves +value+ to a UUID.
         #
-        #   TeamResolver.call(client, "Engineering")             # => "uuid…"
-        #   WorkflowStateResolver.call(client, "Done", team_id: tid)
+        #   TeamResolver.call(client, value: "Engineering")
+        #   WorkflowStateResolver.call(client, value: "Done", team_id: tid)
         #
         # @param client [Client]
         # @param value [String]
         # @param scope [Hash] parent-scope kwargs (e.g. +team_id:+)
         # @return [String] resolved UUID
         # @raise [Error] when no attribute resolves the value
-        def call(client, value, **scope)
+        def call(client, value:, **scope)
           new(client, **scope).resolve(value)
         end
 
         # Resolves each value via {.call}, forwarding scope.
         #
-        #   IssueLabelResolver.call_many(client, ["bug", "p1"], team_id: tid)
+        #   IssueLabelResolver.call_many(client, values: ["bug", "p1"], team_id: tid)
         #
         # @return [Array<String>]
-        def call_many(client, values, **scope)
-          values.map { |v| call(client, v, **scope) }
+        def call_many(client, values:, **scope)
+          values.map { |v| call(client, value: v, **scope) }
         end
       end
 
@@ -188,18 +161,16 @@ module LinearToonMcp
         @scope = scope
       end
 
-      # Resolves +value+ to a UUID. UUIDs pass through unchanged; a configured
-      # shortcut token dispatches to its handler; otherwise each {.lookup_by}
-      # attribute is tried in declared order and the first GraphQL lookup that
-      # returns a node wins.
+      # Resolves +value+ to a UUID. UUIDs pass through unchanged; otherwise
+      # each {.lookup_by} attribute is tried in declared order and the first
+      # GraphQL lookup that returns a node wins.
       #
       # @raise [Error] when nothing resolves +value+
       def resolve(value)
         return value if value.match?(UUID_RE)
-        return apply_shortcut if shortcut_match?(value)
 
         self.class.attributes.each do |attr|
-          definition = ATTRIBUTES.fetch(attr) { raise ArgumentError, "Unknown attribute: #{attr.inspect}" }
+          definition = ATTRIBUTES.fetch(attr) { raise Error, "Unknown attribute: #{attr.inspect}" }
           next unless definition[:matches].call(value)
 
           id = lookup(definition[:filter].call(value).merge(scope_filter))
@@ -213,32 +184,21 @@ module LinearToonMcp
 
       attr_reader :client, :scope
 
-      def shortcut_match?(value)
-        cfg = self.class.shortcut_config
-        cfg && value == cfg[:token]
-      end
-
-      def apply_shortcut
-        cfg = self.class.shortcut_config
-        handler = cfg[:via].is_a?(Symbol) ? SHORTCUTS.fetch(cfg[:via]) : cfg[:via]
-        handler.call(client)
-      end
-
       def scope_filter
         cfg = self.class.scope_config
         return {} unless cfg
 
-        value = scope[cfg[:key]]
-        if value.nil?
+        scope_id = scope[cfg[:key]]
+        if scope_id.nil?
           return {} if cfg[:optional]
-          raise ArgumentError, "Missing required scope: #{cfg[:key]}"
+          raise Error, "Missing required scope: #{cfg[:key]}"
         end
 
-        parent = cfg[:key].to_s.sub(/_id\z/, "").to_sym
+        parent_field = cfg[:key].to_s.sub(/_id\z/, "").to_sym
         if cfg[:workspace_fallback]
-          {or: [{parent => {null: true}}, {parent => {id: {eq: value}}}]}
+          {or: [{parent_field => {null: true}}, {parent_field => {id: {eq: scope_id}}}]}
         else
-          {parent => {id: {eq: value}}}
+          {parent_field => {id: {eq: scope_id}}}
         end
       end
 
