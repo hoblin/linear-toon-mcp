@@ -16,6 +16,7 @@ RSpec.describe LinearToonMcp::Tools::ListProjects do
     end
 
     before do
+      LinearToonMcp.client = client
       allow(client).to receive(:query).and_return("projects" => projects_data)
     end
 
@@ -38,13 +39,13 @@ RSpec.describe LinearToonMcp::Tools::ListProjects do
       let(:team_id) { "12345678-1234-1234-1234-123456789012" }
 
       before do
-        allow(LinearToonMcp::Resolvers::Team).to receive(:call).with(client, value: "Engineering").and_return(team_id)
+        allow(LinearToonMcp::Resolvers::Team).to receive(:call).with(value: "Engineering").and_return(team_id)
         allow(client).to receive(:query).and_return("projects" => projects_data)
       end
 
       it "resolves the team and queries with team filter" do
         response
-        expect(LinearToonMcp::Resolvers::Team).to have_received(:call).with(client, value: "Engineering")
+        expect(LinearToonMcp::Resolvers::Team).to have_received(:call).with(value: "Engineering")
         expect(client).to have_received(:query).with(
           described_class::QUERY,
           variables: {filter: {accessibleTeams: {id: {eq: team_id}}}}
@@ -63,13 +64,13 @@ RSpec.describe LinearToonMcp::Tools::ListProjects do
       let(:team_id) { "12345678-1234-1234-1234-123456789012" }
 
       before do
-        allow(LinearToonMcp::Resolvers::Team).to receive(:call).with(client, value: team_id).and_return(team_id)
+        allow(LinearToonMcp::Resolvers::Team).to receive(:call).with(value: team_id).and_return(team_id)
         allow(client).to receive(:query).and_return("projects" => projects_data)
       end
 
       it "passes UUID through the resolver" do
         response
-        expect(LinearToonMcp::Resolvers::Team).to have_received(:call).with(client, value: team_id)
+        expect(LinearToonMcp::Resolvers::Team).to have_received(:call).with(value: team_id)
       end
     end
 
@@ -106,15 +107,6 @@ RSpec.describe LinearToonMcp::Tools::ListProjects do
       it "returns an error response" do
         expect(response).to be_a(MCP::Tool::Response).and be_error
         expect(response.content.first[:text]).to include("Unexpected response")
-      end
-    end
-
-    context "when server_context has no client" do
-      subject(:response) { described_class.call(server_context: {}) }
-
-      it "returns an error response" do
-        expect(response).to be_a(MCP::Tool::Response).and be_error
-        expect(response.content.first[:text]).to include("client missing")
       end
     end
 

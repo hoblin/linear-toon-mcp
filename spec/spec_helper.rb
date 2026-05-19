@@ -11,6 +11,10 @@ RSpec.configure do |config|
     mocks.verify_partial_doubles = true
   end
 
+  config.before do
+    LinearToonMcp.client = nil
+  end
+
   config.order = :random
   Kernel.srand config.seed
 end

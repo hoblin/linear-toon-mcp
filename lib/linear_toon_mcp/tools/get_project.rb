@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-require "toon"
-
 module LinearToonMcp
   module Tools
     # Fetch a single Linear project by ID, name, or slug and return it as TOON.
     # Supports optional includes for members, milestones, and resources.
-    class GetProject < MCP::Tool
+    class GetProject < Get
       description "Retrieve details of a specific project in Linear"
 
       annotations(
@@ -57,41 +55,29 @@ module LinearToonMcp
       RESOURCES_FIELDS = "documents { nodes { id title } }"
 
       # standard:disable Naming/VariableName
-      class << self
-        # @param query [String] Project ID, name, or slug
-        # @param includeMembers [Boolean] Include project members
-        # @param includeMilestones [Boolean] Include project milestones
-        # @param includeResources [Boolean] Include documents
-        # @param server_context [Hash, nil] must contain +:client+ key with a {Client}
-        # @return [MCP::Tool::Response] TOON-encoded project or error
-        def call(query:, includeMembers: false, includeMilestones: false, includeResources: false, server_context: nil)
-          client = server_context&.dig(:client) or raise Error, "client missing from server_context"
-          project_id = Resolvers::Project.call(client, value: query)
-          graphql = build_query(includeMembers:, includeMilestones:, includeResources:)
-          data = client.query(graphql, variables: {id: project_id})
-          project = data["project"] or raise Error, "Project not found: #{query}"
-          text = Toon.encode(project)
-          MCP::Tool::Response.new([{type: "text", text:}])
-        rescue Error => e
-          MCP::Tool::Response.new([{type: "text", text: e.message}], error: true)
-        end
+      # @param query [String] project name, ID, or slug
+      def perform(query:, includeMembers: false, includeMilestones: false, includeResources: false)
+        project_id = Resolvers::Project.call(value: query)
+        graphql = build_query(includeMembers:, includeMilestones:, includeResources:)
+        data = client.query(graphql, variables: {id: project_id})
+        data["project"] or raise Error, "Project not found: #{query}"
+      end
 
-        private
+      private
 
-        def build_query(includeMembers:, includeMilestones:, includeResources:)
-          fields = [BASE_FIELDS.strip]
-          fields << MEMBERS_FIELDS if includeMembers
-          fields << MILESTONES_FIELDS if includeMilestones
-          fields << RESOURCES_FIELDS if includeResources
+      def build_query(includeMembers:, includeMilestones:, includeResources:)
+        fields = [BASE_FIELDS.strip]
+        fields << MEMBERS_FIELDS if includeMembers
+        fields << MILESTONES_FIELDS if includeMilestones
+        fields << RESOURCES_FIELDS if includeResources
 
-          <<~GRAPHQL
-            query($id: String!) {
-              project(id: $id) {
-                #{fields.join("\n        ")}
-              }
+        <<~GRAPHQL
+          query($id: String!) {
+            project(id: $id) {
+              #{fields.join("\n        ")}
             }
-          GRAPHQL
-        end
+          }
+        GRAPHQL
       end
       # standard:enable Naming/VariableName
     end

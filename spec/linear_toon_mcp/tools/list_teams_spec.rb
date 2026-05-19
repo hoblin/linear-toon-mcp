@@ -2,7 +2,7 @@
 
 RSpec.describe LinearToonMcp::Tools::ListTeams do
   describe ".call" do
-    subject(:response) { described_class.call(server_context: {client:}) }
+    subject(:response) { described_class.call }
 
     let(:client) { instance_double(LinearToonMcp::Client) }
     let(:teams_data) do
@@ -15,12 +15,13 @@ RSpec.describe LinearToonMcp::Tools::ListTeams do
     end
 
     before do
+      LinearToonMcp.client = client
       allow(client).to receive(:query).and_return("teams" => teams_data)
     end
 
     it "queries all teams" do
       response
-      expect(client).to have_received(:query).with(described_class::QUERY)
+      expect(client).to have_received(:query).with(described_class::QUERY, variables: {})
     end
 
     it "returns a TOON-encoded response" do
@@ -51,15 +52,6 @@ RSpec.describe LinearToonMcp::Tools::ListTeams do
       it "returns an error response" do
         expect(response).to be_a(MCP::Tool::Response).and be_error
         expect(response.content.first[:text]).to include("Unexpected response")
-      end
-    end
-
-    context "when server_context has no client" do
-      subject(:response) { described_class.call(server_context: {}) }
-
-      it "returns an error response" do
-        expect(response).to be_a(MCP::Tool::Response).and be_error
-        expect(response.content.first[:text]).to include("client missing")
       end
     end
 

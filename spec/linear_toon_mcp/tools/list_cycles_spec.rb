@@ -17,13 +17,14 @@ RSpec.describe LinearToonMcp::Tools::ListCycles do
     end
 
     before do
-      allow(LinearToonMcp::Resolvers::Team).to receive(:call).with(client, value: team).and_return(team_id)
+      LinearToonMcp.client = client
+      allow(LinearToonMcp::Resolvers::Team).to receive(:call).with(value: team).and_return(team_id)
       allow(client).to receive(:query).and_return("cycles" => cycles_data)
     end
 
     it "resolves the team and queries cycles" do
       response
-      expect(LinearToonMcp::Resolvers::Team).to have_received(:call).with(client, value: team)
+      expect(LinearToonMcp::Resolvers::Team).to have_received(:call).with(value: team)
       expect(client).to have_received(:query).with(
         described_class::QUERY,
         variables: {filter: {team: {id: {eq: team_id}}}}
@@ -43,12 +44,12 @@ RSpec.describe LinearToonMcp::Tools::ListCycles do
       let(:team) { "12345678-1234-1234-1234-123456789012" }
 
       before do
-        allow(LinearToonMcp::Resolvers::Team).to receive(:call).with(client, value: team).and_return(team)
+        allow(LinearToonMcp::Resolvers::Team).to receive(:call).with(value: team).and_return(team)
       end
 
       it "passes UUID through the resolver" do
         response
-        expect(LinearToonMcp::Resolvers::Team).to have_received(:call).with(client, value: team)
+        expect(LinearToonMcp::Resolvers::Team).to have_received(:call).with(value: team)
       end
     end
 
@@ -85,15 +86,6 @@ RSpec.describe LinearToonMcp::Tools::ListCycles do
       it "returns an error response" do
         expect(response).to be_a(MCP::Tool::Response).and be_error
         expect(response.content.first[:text]).to include("Unexpected response")
-      end
-    end
-
-    context "when server_context has no client" do
-      subject(:response) { described_class.call(team: "Engineering", server_context: {}) }
-
-      it "returns an error response" do
-        expect(response).to be_a(MCP::Tool::Response).and be_error
-        expect(response.content.first[:text]).to include("client missing")
       end
     end
 

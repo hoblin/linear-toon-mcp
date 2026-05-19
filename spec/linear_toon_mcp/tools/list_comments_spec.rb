@@ -29,6 +29,7 @@ RSpec.describe LinearToonMcp::Tools::ListComments do
     end
 
     before do
+      LinearToonMcp.client = client
       allow(client).to receive(:query).and_return("issue" => {"comments" => comments_data})
     end
 
@@ -69,15 +70,6 @@ RSpec.describe LinearToonMcp::Tools::ListComments do
       it "returns an error response" do
         expect(response).to be_a(MCP::Tool::Response).and be_error
         expect(response.content.first[:text]).to include("Issue not found: TEST-1")
-      end
-    end
-
-    context "when server_context has no client" do
-      subject(:response) { described_class.call(issueId: issue_id, server_context: {}) }
-
-      it "returns an error response" do
-        expect(response).to be_a(MCP::Tool::Response).and be_error
-        expect(response.content.first[:text]).to include("client missing")
       end
     end
 

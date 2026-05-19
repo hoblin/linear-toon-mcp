@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "toon"
-
 module LinearToonMcp
   module Tools
     # Update an existing Linear issue by ID. Supports partial updates,
@@ -9,7 +7,7 @@ module LinearToonMcp
     # params (blocks, relatedTo, duplicateOf) and parentId accept either
     # issue UUIDs or human identifiers (e.g., LIN-123); both are passed
     # through to Linear unchanged.
-    class UpdateIssue < MCP::Tool
+    class UpdateIssue < Update
       description "Update an existing Linear issue"
 
       annotations(
@@ -101,145 +99,132 @@ module LinearToonMcp
       }.freeze
 
       # standard:disable Naming/VariableName, Metrics/MethodLength
-      class << self
-        # @param id [String] issue ID
-        # @param server_context [Hash, nil] must contain +:client+ key
-        # @return [MCP::Tool::Response] TOON-encoded issue or error
-        def call(id:, server_context: nil, **kwargs)
-          client = server_context&.dig(:client) or raise Error, "client missing from server_context"
-          raise Error, "Cannot specify both assignee and delegate" if kwargs.key?(:assignee) && kwargs.key?(:delegate)
+      def perform(id:, **kwargs)
+        raise Error, "Cannot specify both assignee and delegate" if kwargs.key?(:assignee) && kwargs.key?(:delegate)
+        issue = super
+        warnings = post_update(id, **kwargs)
+        warnings.empty? ? issue : respond_with_warnings(issue, warnings, context: "issue was updated")
+      end
 
-          input = {}
-          team_id = resolve_team_id(client, id, kwargs)
-          build_input(input, client, team_id, kwargs)
+      def variables(id:, **kwargs)
+        input = {}
+        team_id = resolve_team_id(id, kwargs)
+        build_input(input, team_id, kwargs)
+        {id:, input:}
+      end
 
-          data = client.query(MUTATION, variables: {id:, input:})
-          result = data["issueUpdate"] or raise Error, "Issue update failed: no result returned"
-          raise Error, "Issue update failed" unless result["success"]
+      private
 
-          issue = result["issue"]
-          warnings = post_update(client, id, **kwargs)
-
-          text = Toon.encode(issue)
-          text += "\nWARNING (issue was updated): #{warnings.join("; ")}" if warnings.any?
-          MCP::Tool::Response.new([{type: "text", text:}])
+      def post_update(issue_id, links: nil, **kwargs)
+        warnings = []
+        begin
+          replace_relations(issue_id, kwargs)
         rescue Error => e
-          MCP::Tool::Response.new([{type: "text", text: e.message}], error: true)
+          warnings << e.message
         end
-
-        private
-
-        def post_update(client, issue_id, links: nil, **kwargs)
-          warnings = []
-          begin
-            replace_relations(client, issue_id, kwargs)
-          rescue Error => e
-            warnings << e.message
-          end
-          begin
-            create_links(client, issue_id, links)
-          rescue Error => e
-            warnings << e.message
-          end
-          warnings
+        begin
+          create_links(issue_id, links)
+        rescue Error => e
+          warnings << e.message
         end
+        warnings
+      end
 
-        def resolve_team_id(client, issue_id, kwargs)
-          return Resolvers::Team.call(client, value: kwargs[:team]) if kwargs.key?(:team)
-          return unless needs_team_id?(kwargs)
+      def resolve_team_id(issue_id, kwargs)
+        return Resolvers::Team.call(value: kwargs[:team]) if kwargs.key?(:team)
+        return unless needs_team_id?(kwargs)
 
-          data = client.query(ISSUE_TEAM_QUERY, variables: {id: issue_id})
-          data.dig("issue", "team", "id") or raise Error, "Could not determine issue team"
+        data = client.query(ISSUE_TEAM_QUERY, variables: {id: issue_id})
+        data.dig("issue", "team", "id") or raise Error, "Could not determine issue team"
+      end
+
+      def needs_team_id?(kwargs)
+        kwargs.key?(:state) || kwargs.key?(:cycle) || kwargs.key?(:labels)
+      end
+
+      def build_input(input, team_id, kwargs)
+        add_direct_fields(input, kwargs)
+        add_nullable_fields(input, kwargs)
+        add_resolved_fields(input, team_id, kwargs)
+      end
+
+      def add_direct_fields(input, kwargs)
+        {title: :title, description: :description, priority: :priority,
+         estimate: :estimate, dueDate: :dueDate}.each do |key, field|
+          input[field] = kwargs[key] if kwargs.key?(key)
         end
+      end
 
-        def needs_team_id?(kwargs)
-          kwargs.key?(:state) || kwargs.key?(:cycle) || kwargs.key?(:labels)
+      def add_nullable_fields(input, kwargs)
+        if kwargs.key?(:assignee)
+          input[:assigneeId] =
+            kwargs[:assignee] ? Resolvers::User.call(value: kwargs[:assignee]) : nil
         end
-
-        def build_input(input, client, team_id, kwargs)
-          add_direct_fields(input, kwargs)
-          add_nullable_fields(input, client, kwargs)
-          add_resolved_fields(input, client, team_id, kwargs)
+        if kwargs.key?(:delegate)
+          input[:assigneeId] =
+            kwargs[:delegate] ? Resolvers::User.call(value: kwargs[:delegate]) : nil
         end
+        input[:parentId] = kwargs[:parentId] if kwargs.key?(:parentId)
+      end
 
-        def add_direct_fields(input, kwargs)
-          {title: :title, description: :description, priority: :priority,
-           estimate: :estimate, dueDate: :dueDate}.each do |key, field|
-            input[field] = kwargs[key] if kwargs.key?(key)
-          end
+      def add_resolved_fields(input, team_id, kwargs)
+        input[:teamId] = team_id if kwargs.key?(:team) && team_id
+        if kwargs.key?(:state) && team_id
+          input[:stateId] =
+            Resolvers::WorkflowState.call(value: kwargs[:state], team_id:)
         end
-
-        def add_nullable_fields(input, client, kwargs)
-          if kwargs.key?(:assignee)
-            input[:assigneeId] =
-              kwargs[:assignee] ? Resolvers::User.call(client, value: kwargs[:assignee]) : nil
-          end
-          if kwargs.key?(:delegate)
-            input[:assigneeId] =
-              kwargs[:delegate] ? Resolvers::User.call(client, value: kwargs[:delegate]) : nil
-          end
-          input[:parentId] = kwargs[:parentId] if kwargs.key?(:parentId)
+        if kwargs.key?(:labels) && team_id
+          input[:labelIds] = Resolvers::IssueLabel.call_many(values: kwargs[:labels], team_id:)
         end
-
-        def add_resolved_fields(input, client, team_id, kwargs)
-          input[:teamId] = team_id if kwargs.key?(:team) && team_id
-          if kwargs.key?(:state) && team_id
-            input[:stateId] =
-              Resolvers::WorkflowState.call(client, value: kwargs[:state], team_id:)
-          end
-          if kwargs.key?(:labels) && team_id
-            input[:labelIds] = Resolvers::IssueLabel.call_many(client, values: kwargs[:labels], team_id:)
-          end
-          project_id = nil
-          if kwargs.key?(:project) && kwargs[:project]
-            project_id = Resolvers::Project.call(client, value: kwargs[:project])
-            input[:projectId] = project_id
-          end
-          if kwargs.key?(:milestone)
-            raise Error, "milestone requires project" unless project_id
-            input[:projectMilestoneId] =
-              Resolvers::ProjectMilestone.call(client, value: kwargs[:milestone], project_id:)
-          end
-          if kwargs.key?(:cycle) && team_id
-            input[:cycleId] =
-              Resolvers::Cycle.call(client, value: kwargs[:cycle], team_id:)
-          end
+        project_id = nil
+        if kwargs.key?(:project) && kwargs[:project]
+          project_id = Resolvers::Project.call(value: kwargs[:project])
+          input[:projectId] = project_id
         end
+        if kwargs.key?(:milestone)
+          raise Error, "milestone requires project" unless project_id
+          input[:projectMilestoneId] =
+            Resolvers::ProjectMilestone.call(value: kwargs[:milestone], project_id:)
+        end
+        if kwargs.key?(:cycle) && team_id
+          input[:cycleId] =
+            Resolvers::Cycle.call(value: kwargs[:cycle], team_id:)
+        end
+      end
 
-        def replace_relations(client, issue_id, kwargs)
-          RELATION_TYPE_MAP.each do |param, type|
-            next unless kwargs.key?(param)
-            values = (param == :duplicateOf) ? [kwargs[param]].compact : Array(kwargs[param])
-            delete_existing_relations(client, issue_id, type)
-            values.each do |related_id|
-              input = {issueId: issue_id, relatedIssueId: related_id, type:}
-              data = client.query(RELATION_MUTATION, variables: {input:})
-              next if data.dig("issueRelationCreate", "success")
-              raise Error, "Failed to create #{type} relation with #{related_id}"
-            end
+      def replace_relations(issue_id, kwargs)
+        RELATION_TYPE_MAP.each do |param, type|
+          next unless kwargs.key?(param)
+          values = (param == :duplicateOf) ? [kwargs[param]].compact : Array(kwargs[param])
+          delete_existing_relations(issue_id, type)
+          values.each do |related_id|
+            input = {issueId: issue_id, relatedIssueId: related_id, type:}
+            data = client.query(RELATION_MUTATION, variables: {input:})
+            next if data.dig("issueRelationCreate", "success")
+            raise Error, "Failed to create #{type} relation with #{related_id}"
           end
         end
+      end
 
-        def delete_existing_relations(client, issue_id, type)
-          data = client.query(RELATIONS_QUERY, variables: {id: issue_id})
-          relations = data.dig("issue", "relations", "nodes") || []
-          relations.each do |rel|
-            next unless rel["type"] == type
-            del = client.query(RELATION_DELETE_MUTATION, variables: {id: rel["id"]})
-            next if del.dig("issueRelationDelete", "success")
-            raise Error, "Failed to delete #{type} relation #{rel["id"]}"
-          end
+      def delete_existing_relations(issue_id, type)
+        data = client.query(RELATIONS_QUERY, variables: {id: issue_id})
+        relations = data.dig("issue", "relations", "nodes") || []
+        relations.each do |rel|
+          next unless rel["type"] == type
+          del = client.query(RELATION_DELETE_MUTATION, variables: {id: rel["id"]})
+          next if del.dig("issueRelationDelete", "success")
+          raise Error, "Failed to delete #{type} relation #{rel["id"]}"
         end
+      end
 
-        def create_links(client, issue_id, links)
-          return unless links
+      def create_links(issue_id, links)
+        return unless links
 
-          links.each do |link|
-            vars = {url: link[:url], issueId: issue_id, title: link[:title]}
-            data = client.query(LINK_MUTATION, variables: vars)
-            next if data.dig("attachmentLinkURL", "success")
-            raise Error, "Failed to attach link: #{link[:url]}"
-          end
+        links.each do |link|
+          vars = {url: link[:url], issueId: issue_id, title: link[:title]}
+          data = client.query(LINK_MUTATION, variables: vars)
+          next if data.dig("attachmentLinkURL", "success")
+          raise Error, "Failed to attach link: #{link[:url]}"
         end
       end
       # standard:enable Naming/VariableName, Metrics/MethodLength
