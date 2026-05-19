@@ -15,6 +15,21 @@ module LinearToonMcp
     # to construct the GraphQL input.
     class Create < Base
       class << self
+        # Overrides the derived GraphQL mutation field name.
+        def mutation(name)
+          @mutation_name = name.to_s
+        end
+
+        # Overrides the derived payload entity field name.
+        def entity(name)
+          @entity_name = name.to_s
+        end
+
+        # Overrides the derived entity label used in error messages.
+        def label(name)
+          @entity_label = name.to_s
+        end
+
         # Returns the GraphQL mutation field name.
         def mutation_name
           @mutation_name ||= "#{entity_name}Create"
