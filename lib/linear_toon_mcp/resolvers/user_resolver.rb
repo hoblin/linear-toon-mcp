@@ -2,8 +2,7 @@
 
 module LinearToonMcp
   module Resolvers
-    # Resolves a Linear user by UUID, email, name, or the literal +"me"+
-    # (which short-circuits through the +viewer+ query).
+    # Resolves a Linear user by UUID, email, name, or the literal +"me"+.
     class UserResolver < Base
       shortcut "me", via: :viewer
       lookup_by :email, :name

@@ -2,10 +2,7 @@
 
 module LinearToonMcp
   module Resolvers
-    # Resolves a Linear team by UUID, key (e.g. +"ENG"+ — uppercase short
-    # identifier), or name (case-insensitive). Case decides which lookup
-    # runs: uppercase tokens hit the +key+ filter, mixed-case fall through
-    # to +name+.
+    # Resolves a Linear team by UUID, key, or name.
     class TeamResolver < Base
       lookup_by :key, :name
     end

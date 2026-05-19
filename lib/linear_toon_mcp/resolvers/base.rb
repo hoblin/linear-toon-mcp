@@ -26,14 +26,10 @@ module LinearToonMcp
     class Base
       # Catalog of well-known lookup attributes. Each entry pairs a predicate
       # (does this value look like the attribute?) with a filter builder.
-      # Linear workflow state enum values — used by the +:type+ attribute
-      # predicate to recognize state-type lookups (e.g. +"started"+) without
-      # colliding with same-named human labels (e.g. +"Started"+).
+      # Linear workflow state type enum.
       WORKFLOW_STATE_TYPE_RE = /\A(backlog|unstarted|started|completed|canceled|triage)\z/
 
-      # Linear team key shape — uppercase letter followed by uppercase letters,
-      # digits, underscores, or hyphens (e.g. +"ENG"+, +"LIN-1"+). Distinguishes
-      # key lookups from team-name lookups by case.
+      # Linear team key format.
       TEAM_KEY_RE = /\A[A-Z][A-Z0-9_-]*\z/
 
       ATTRIBUTES = {
@@ -87,8 +83,7 @@ module LinearToonMcp
         # @param optional [Boolean] omit the scope filter when scope arg is nil
         # @param workspace_fallback [Boolean] when set, the scope filter becomes
         #   an +or:+ matching either the scoped parent or workspace-level
-        #   records (parent +null+). Used by {IssueLabelResolver} so a name
-        #   lookup resolves either a team-scoped or workspace-wide label.
+        #   records (parent +null+)
         def scoped_by(key, optional: false, workspace_fallback: false)
           @scope_config = {key: key, optional: optional, workspace_fallback: workspace_fallback}.freeze
         end
