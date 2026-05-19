@@ -48,7 +48,11 @@ RSpec.describe LinearToonMcp, ".server" do
         include(name: "save_initiative", description: "Create or update a Linear initiative (id presence determines)"),
         include(name: "delete_initiative", description: "Delete a Linear initiative (hard by default; archive: true soft-deletes)"),
         include(name: "add_project_to_initiative", description: "Link a project to an initiative"),
-        include(name: "remove_project_from_initiative", description: "Unlink a project from an initiative")
+        include(name: "remove_project_from_initiative", description: "Unlink a project from an initiative"),
+        include(name: "list_status_updates", description: "List status updates on a project or initiative"),
+        include(name: "get_status_update", description: "Retrieve a status update by ID (project or initiative)"),
+        include(name: "save_status_update", description: "Create or update a project or initiative status update"),
+        include(name: "delete_status_update", description: "Archive a status update (project or initiative)")
       )
     end
   end
