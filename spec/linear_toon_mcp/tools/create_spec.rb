@@ -7,18 +7,30 @@ RSpec.describe LinearToonMcp::Tools::Create do
 
   describe "conventions derived from class name" do
     it "camelCases the entity from the class name, dropping the Create prefix" do
-      expect(LinearToonMcp::Tools::CreateIssue.entity_name).to eq("issue")
-      expect(LinearToonMcp::Tools::CreateComment.entity_name).to eq("comment")
+      tool = Class.new(described_class) do
+        def self.name
+          "LinearToonMcp::Tools::CreateThing"
+        end
+      end
+      expect(tool.entity_name).to eq("thing")
     end
 
     it "appends Create to the entity for the mutation field" do
-      expect(LinearToonMcp::Tools::CreateIssue.mutation_name).to eq("issueCreate")
-      expect(LinearToonMcp::Tools::CreateComment.mutation_name).to eq("commentCreate")
+      tool = Class.new(described_class) do
+        def self.name
+          "LinearToonMcp::Tools::CreateThing"
+        end
+      end
+      expect(tool.mutation_name).to eq("thingCreate")
     end
 
     it "uses the stripped class name as the entity label" do
-      expect(LinearToonMcp::Tools::CreateIssue.entity_label).to eq("Issue")
-      expect(LinearToonMcp::Tools::CreateComment.entity_label).to eq("Comment")
+      tool = Class.new(described_class) do
+        def self.name
+          "LinearToonMcp::Tools::CreateThing"
+        end
+      end
+      expect(tool.entity_label).to eq("Thing")
     end
   end
 
