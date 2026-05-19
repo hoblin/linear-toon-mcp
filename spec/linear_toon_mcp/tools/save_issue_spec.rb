@@ -77,6 +77,15 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       )
     end
 
+    it "resolves a delegate (instead of assignee) to assigneeId on create" do
+      allow(LinearToonMcp::Resolvers::User).to receive(:call).with(value: "agent-1").and_return("u-99")
+      described_class.call(title: "T", team: "X", delegate: "agent-1")
+      expect(client).to have_received(:query).with(
+        a_string_matching(/issueCreate/),
+        variables: {input: hash_including(assigneeId: "u-99")}
+      )
+    end
+
     it "rejects milestone without project" do
       response = described_class.call(title: "T", team: "X", milestone: "M")
       expect(response).to be_error
@@ -143,6 +152,26 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
         a_string_matching(/issueUpdate/),
         variables: {id: "issue-1", input: {assigneeId: nil}}
       )
+    end
+
+    it "resolves a non-null delegate on update (treats as assignee)" do
+      allow(LinearToonMcp::Resolvers::User).to receive(:call).with(value: "agent-1").and_return("u-2")
+      described_class.call(id: "issue-1", delegate: "agent-1")
+      expect(client).to have_received(:query).with(
+        a_string_matching(/issueUpdate/),
+        variables: {id: "issue-1", input: {assigneeId: "u-2"}}
+      )
+    end
+
+    it "treats duplicateOf: nil as 'remove' on update" do
+      allow(client).to receive(:query)
+        .with(a_string_matching(/issue\(id: \$id\)/), anything)
+        .and_return("issue" => {"relations" => {"nodes" => []}})
+
+      described_class.call(id: "issue-1", duplicateOf: nil)
+      # duplicateOf: nil with explicit key means "clear the duplicate relation"
+      # which routes through replace_relations (deletes existing, adds none).
+      expect(client).to have_received(:query).with(a_string_matching(/issue\(id: \$id\)/), anything)
     end
 
     it "treats delegate: nil as 'remove' (sends assigneeId: null)" do
@@ -220,6 +249,64 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       response = described_class.call(title: "T", team: "X")
       expect(response).to be_error
       expect(response.content.first[:text]).to include("no result returned")
+    end
+
+    it "raises when update reports success: false" do
+      allow(client).to receive(:query)
+        .and_return("issueUpdate" => {"success" => false, "issue" => nil})
+      response = described_class.call(id: "issue-1", title: "T")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Issue save failed")
+    end
+
+    it "raises when update result key is missing" do
+      allow(client).to receive(:query).and_return({})
+      response = described_class.call(id: "issue-1", title: "T")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("no result returned")
+    end
+  end
+
+  describe "error propagation" do
+    it "surfaces resolver errors as MCP error responses (create)" do
+      allow(LinearToonMcp::Resolvers::Team).to receive(:call)
+        .and_raise(LinearToonMcp::Error, "Team not found: Missing")
+      response = described_class.call(title: "T", team: "Missing")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Team not found")
+    end
+
+    it "surfaces client errors as MCP error responses" do
+      allow(client).to receive(:query)
+        .and_raise(LinearToonMcp::Error, "HTTP 500: Server error")
+      response = described_class.call(title: "T", team: "X")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("HTTP 500")
+    end
+  end
+
+  describe "relation identifier passthrough" do
+    it "passes both UUIDs and identifiers (e.g., LIN-100) straight to issueRelationCreate" do
+      allow(client).to receive(:query)
+        .with(a_string_matching(/issueCreate/), anything)
+        .and_return("issueCreate" => {"success" => true, "issue" => issue_data})
+      allow(client).to receive(:query)
+        .with(a_string_matching(/issueRelationCreate/), anything)
+        .and_return("issueRelationCreate" => {"success" => true})
+
+      described_class.call(
+        title: "T", team: "X",
+        blocks: ["12345678-1234-1234-1234-123456789012", "VIB-100"]
+      )
+
+      expect(client).to have_received(:query).with(
+        a_string_matching(/issueRelationCreate/),
+        variables: {input: hash_including(relatedIssueId: "12345678-1234-1234-1234-123456789012")}
+      )
+      expect(client).to have_received(:query).with(
+        a_string_matching(/issueRelationCreate/),
+        variables: {input: hash_including(relatedIssueId: "VIB-100")}
+      )
     end
   end
 end

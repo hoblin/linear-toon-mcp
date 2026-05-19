@@ -5,8 +5,7 @@ module LinearToonMcp
     # Create or update a comment on an issue, project, initiative, or
     # project status update. +id+ presence determines create vs update.
     # On create, exactly one parent identifies what the comment is
-    # attached to. On update, the comment id alone suffices — Linear
-    # doesn't allow reparenting comments.
+    # attached to.
     class SaveComment < Base
       description "Create or update a comment on an issue, project, initiative, or project status update"
 
@@ -70,6 +69,7 @@ module LinearToonMcp
 
       private
 
+      # Linear's commentUpdate accepts body only; it doesn't reparent.
       def update(id, body)
         data = client.query(UPDATE_MUTATION, variables: {id: id, input: {body: body}})
         extract(data, "commentUpdate")

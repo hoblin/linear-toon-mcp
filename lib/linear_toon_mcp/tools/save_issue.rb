@@ -3,13 +3,8 @@
 module LinearToonMcp
   module Tools
     # Create or update a Linear issue. +id+ presence determines create
-    # vs update. On create, +title+ and +team+ are required and relations
-    # (+blocks+, +relatedTo+, +duplicateOf+) are appended. On update,
-    # nothing is required besides +id+; relations are replaced (passing
-    # an empty array clears them, omitting leaves them untouched).
-    #
-    # Resolves human-friendly names to IDs for team, assignee, state,
-    # labels, project, cycle, and milestone. Relation params and
+    # vs update. Resolves human-friendly names to IDs for team, assignee,
+    # state, labels, project, cycle, and milestone. Relation params and
     # +parentId+ accept either issue UUIDs or human identifiers
     # (e.g., LIN-123).
     class SaveIssue < Base
@@ -128,7 +123,7 @@ module LinearToonMcp
 
         input = {title: title, teamId: team_id}
         add_direct_fields(input, kwargs)
-        add_resolved_fields(input, team_id, kwargs)
+        add_resolved_fields_create(input, team_id, kwargs)
 
         issue = submit(CREATE_MUTATION, "issueCreate", input: input)
         warnings = post_create(issue["id"], kwargs)
@@ -140,7 +135,7 @@ module LinearToonMcp
         team_id = resolve_team_id(id, kwargs)
         add_direct_fields(input, kwargs)
         add_nullable_fields(input, kwargs)
-        add_resolved_fields_with_keys(input, team_id, kwargs)
+        add_resolved_fields_update(input, team_id, kwargs)
 
         issue = submit(UPDATE_MUTATION, "issueUpdate", id: id, input: input)
         warnings = post_update(id, kwargs)
@@ -180,7 +175,7 @@ module LinearToonMcp
         input[:parentId] = kwargs[:parentId] if kwargs.key?(:parentId)
       end
 
-      def add_resolved_fields(input, team_id, kwargs)
+      def add_resolved_fields_create(input, team_id, kwargs)
         if kwargs[:assignee] || kwargs[:delegate]
           input[:assigneeId] =
             Resolvers::User.call(value: kwargs[:delegate] || kwargs[:assignee])
@@ -196,7 +191,7 @@ module LinearToonMcp
         input[:projectMilestoneId] = Resolvers::ProjectMilestone.call(value: kwargs[:milestone], project_id: project_id)
       end
 
-      def add_resolved_fields_with_keys(input, team_id, kwargs)
+      def add_resolved_fields_update(input, team_id, kwargs)
         input[:teamId] = team_id if kwargs.key?(:team) && team_id
         if kwargs.key?(:state) && team_id
           input[:stateId] = Resolvers::WorkflowState.call(value: kwargs[:state], team_id: team_id)

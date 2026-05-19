@@ -84,6 +84,24 @@ RSpec.describe LinearToonMcp::Tools::SaveComment do
     end
   end
 
+  describe "error propagation" do
+    it "surfaces resolver errors as MCP error responses" do
+      allow(LinearToonMcp::Resolvers::Project).to receive(:call)
+        .and_raise(LinearToonMcp::Error, "Project not found: Missing")
+      response = described_class.call(body: "hi", project: "Missing")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Project not found")
+    end
+
+    it "surfaces client errors as MCP error responses" do
+      allow(client).to receive(:query)
+        .and_raise(LinearToonMcp::Error, "HTTP 500: Server error")
+      response = described_class.call(body: "hi", issue: "VIB-1")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("HTTP 500")
+    end
+  end
+
   describe "mutation result handling" do
     it "raises when create reports success: false" do
       allow(client).to receive(:query)

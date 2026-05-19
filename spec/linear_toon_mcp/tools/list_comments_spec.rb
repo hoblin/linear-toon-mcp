@@ -61,6 +61,23 @@ RSpec.describe LinearToonMcp::Tools::ListComments do
     end
   end
 
+  describe "response handling" do
+    it "returns an error when comments field is nil (unexpected response)" do
+      allow(client).to receive(:query).and_return("comments" => nil)
+      response = described_class.call(issue: "VIB-1")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Unexpected response")
+    end
+
+    it "surfaces client errors as MCP error responses" do
+      allow(client).to receive(:query)
+        .and_raise(LinearToonMcp::Error, "HTTP 500: Server error")
+      response = described_class.call(issue: "VIB-1")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("HTTP 500")
+    end
+  end
+
   describe "pagination" do
     it "defaults to first: 50, orderBy: createdAt" do
       described_class.call(issue: "VIB-1")
