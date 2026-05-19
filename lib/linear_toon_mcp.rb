@@ -40,7 +40,10 @@ module LinearToonMcp
         Tools::DeleteInitiative, Tools::AddProjectToInitiative,
         Tools::RemoveProjectFromInitiative,
         Tools::ListStatusUpdates, Tools::GetStatusUpdate,
-        Tools::SaveStatusUpdate, Tools::DeleteStatusUpdate
+        Tools::SaveStatusUpdate, Tools::DeleteStatusUpdate,
+        Tools::SaveProject, Tools::ArchiveProject,
+        Tools::GetTeam, Tools::GetUser, Tools::GetIssueStatus,
+        Tools::CreateIssueLabel
       ]
     )
   end
