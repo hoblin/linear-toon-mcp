@@ -84,7 +84,7 @@ module LinearToonMcp
           client = server_context&.dig(:client) or raise Error, "client missing from server_context"
           raise Error, "Cannot specify both assignee and delegate" if kwargs.key?(:assignee) && kwargs.key?(:delegate)
 
-          team_id = Resolvers.resolve_team(client, team)
+          team_id = Resolvers::Team.call(client, value: team)
           input = {title:, teamId: team_id}
 
           add_direct_fields(input, **kwargs)
@@ -132,15 +132,15 @@ module LinearToonMcp
 
         def resolve_fields(input, client, team_id, assignee: nil, state: nil, labels: nil,
           project: nil, cycle: nil, milestone: nil, delegate: nil, **)
-          input[:assigneeId] = Resolvers.resolve_user(client, delegate || assignee) if assignee || delegate
-          input[:stateId] = Resolvers.resolve_state(client, team_id, state) if state
-          input[:labelIds] = Resolvers.resolve_labels(client, labels, team_id:) if labels
-          project_id = Resolvers.resolve_project(client, project) if project
+          input[:assigneeId] = Resolvers::User.call(client, value: delegate || assignee) if assignee || delegate
+          input[:stateId] = Resolvers::WorkflowState.call(client, value: state, team_id:) if state
+          input[:labelIds] = Resolvers::IssueLabel.call_many(client, values: labels, team_id:) if labels
+          project_id = Resolvers::Project.call(client, value: project) if project
           input[:projectId] = project_id if project_id
-          input[:cycleId] = Resolvers.resolve_cycle(client, team_id, cycle) if cycle
+          input[:cycleId] = Resolvers::Cycle.call(client, value: cycle, team_id:) if cycle
           if milestone
             raise Error, "milestone requires project" unless project_id
-            input[:projectMilestoneId] = Resolvers.resolve_milestone(client, project_id, milestone)
+            input[:projectMilestoneId] = Resolvers::ProjectMilestone.call(client, value: milestone, project_id:)
           end
         end
 

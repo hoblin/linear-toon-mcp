@@ -37,7 +37,7 @@ module LinearToonMcp
 
           variables = {}
           if team
-            team_id = Resolvers.resolve_team(client, team)
+            team_id = Resolvers::Team.call(client, value: team)
             variables[:filter] = {accessibleTeams: {id: {eq: team_id}}}
           end
 
