@@ -32,4 +32,9 @@ RSpec.describe LinearToonMcp::Resolvers::CycleResolver do
     expect { described_class.call(client, "Missing", team_id: team_id) }
       .to raise_error(LinearToonMcp::Error, /\ACycle not found: Missing\z/)
   end
+
+  it "raises when team_id is missing" do
+    expect { described_class.call(client, "Sprint 5") }
+      .to raise_error(ArgumentError, /Missing required scope: team_id/)
+  end
 end

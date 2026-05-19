@@ -18,6 +18,24 @@ RSpec.describe LinearToonMcp::Resolvers::WorkflowStateResolver do
     )
   end
 
+  it "resolves a lowercase enum value via the type filter" do
+    allow(client).to receive(:query).and_return("workflowStates" => {"nodes" => [{"id" => "state-uuid"}]})
+    expect(described_class.call(client, "started", team_id: team_id)).to eq("state-uuid")
+    expect(client).to have_received(:query).with(
+      anything,
+      variables: {filter: {type: {eq: "started"}, team: {id: {eq: team_id}}}}
+    )
+  end
+
+  it "treats capitalized enum tokens as names (no type collision)" do
+    allow(client).to receive(:query).and_return("workflowStates" => {"nodes" => [{"id" => "state-uuid"}]})
+    described_class.call(client, "Started", team_id: team_id)
+    expect(client).to have_received(:query).with(
+      anything,
+      variables: {filter: {name: {eqIgnoreCase: "Started"}, team: {id: {eq: team_id}}}}
+    )
+  end
+
   it "raises when state not found" do
     allow(client).to receive(:query).and_return("workflowStates" => {"nodes" => []})
     expect { described_class.call(client, "Missing", team_id: team_id) }

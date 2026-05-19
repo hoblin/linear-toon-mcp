@@ -26,6 +26,16 @@ module LinearToonMcp
     class Base
       # Catalog of well-known lookup attributes. Each entry pairs a predicate
       # (does this value look like the attribute?) with a filter builder.
+      # Linear workflow state enum values — used by the +:type+ attribute
+      # predicate to recognize state-type lookups (e.g. +"started"+) without
+      # colliding with same-named human labels (e.g. +"Started"+).
+      WORKFLOW_STATE_TYPE_RE = /\A(backlog|unstarted|started|completed|canceled|triage)\z/
+
+      # Linear team key shape — uppercase letter followed by uppercase letters,
+      # digits, underscores, or hyphens (e.g. +"ENG"+, +"LIN-1"+). Distinguishes
+      # key lookups from team-name lookups by case.
+      TEAM_KEY_RE = /\A[A-Z][A-Z0-9_-]*\z/
+
       ATTRIBUTES = {
         name: {
           matches: ->(_v) { true },
@@ -42,6 +52,14 @@ module LinearToonMcp
         slug: {
           matches: ->(_v) { true },
           filter: ->(v) { {slugId: {eqIgnoreCase: v}} }
+        },
+        key: {
+          matches: ->(v) { v.match?(TEAM_KEY_RE) },
+          filter: ->(v) { {key: {eq: v}} }
+        },
+        type: {
+          matches: ->(v) { v.match?(WORKFLOW_STATE_TYPE_RE) },
+          filter: ->(v) { {type: {eq: v}} }
         }
       }.freeze
 
@@ -67,11 +85,12 @@ module LinearToonMcp
         # (+:team+ → +{team: {id: {eq: value}}}+).
         # @param key [Symbol] kwarg name passed to {.call}
         # @param optional [Boolean] omit the scope filter when scope arg is nil
-        # @param workspace_fallback [Boolean] when scope is present, build the
-        #   filter as +or:+ matching either the scoped parent or workspace-
-        #   level records (parent +null+)
+        # @param workspace_fallback [Boolean] when set, the scope filter becomes
+        #   an +or:+ matching either the scoped parent or workspace-level
+        #   records (parent +null+). Used by {IssueLabelResolver} so a name
+        #   lookup resolves either a team-scoped or workspace-wide label.
         def scoped_by(key, optional: false, workspace_fallback: false)
-          @scope_config = {key: key, optional: optional, workspace_fallback: workspace_fallback}
+          @scope_config = {key: key, optional: optional, workspace_fallback: workspace_fallback}.freeze
         end
 
         # Declare a literal token that short-circuits to a non-filter lookup.
@@ -79,7 +98,7 @@ module LinearToonMcp
         # @param via [Symbol, Proc] built-in handler (+:viewer+) or a custom
         #   callable receiving the client and returning a UUID
         def shortcut(token, via:)
-          @shortcut_config = {token: token, via: via}
+          @shortcut_config = {token: token, via: via}.freeze
         end
 
         # Override the derived GraphQL connection name.
@@ -99,6 +118,7 @@ module LinearToonMcp
 
         # Accessors --------------------------------------------------------
 
+        # @return [Array<Symbol>] attributes declared via {.lookup_by}
         def attributes
           @attributes || []
         end
@@ -147,8 +167,11 @@ module LinearToonMcp
           new(client, **scope).resolve(value)
         end
 
-        # Batch convenience — resolves each value via {.call}.
+        # Batch convenience — resolves each value via {.call}. Scope kwargs
+        # are forwarded to every per-value lookup.
+        # @param client [Client]
         # @param values [Array<String>]
+        # @param scope [Hash] parent-scoping kwargs forwarded to each {.call}
         # @return [Array<String>]
         def call_many(client, values, **scope)
           values.map { |v| call(client, v, **scope) }

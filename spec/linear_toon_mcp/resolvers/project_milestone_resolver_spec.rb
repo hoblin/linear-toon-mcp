@@ -23,4 +23,9 @@ RSpec.describe LinearToonMcp::Resolvers::ProjectMilestoneResolver do
     expect { described_class.call(client, "Missing", project_id: project_id) }
       .to raise_error(LinearToonMcp::Error, /\AMilestone not found: Missing\z/)
   end
+
+  it "raises when project_id is missing" do
+    expect { described_class.call(client, "MVP") }
+      .to raise_error(ArgumentError, /Missing required scope: project_id/)
+  end
 end

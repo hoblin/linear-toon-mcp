@@ -8,12 +8,31 @@ RSpec.describe LinearToonMcp::Resolvers::TeamResolver do
     expect(described_class.call(client, uuid)).to eq(uuid)
   end
 
-  it "resolves a name via the team filter" do
+  it "resolves a name via the name filter" do
     allow(client).to receive(:query).and_return("teams" => {"nodes" => [{"id" => uuid}]})
     expect(described_class.call(client, "Engineering")).to eq(uuid)
     expect(client).to have_received(:query).with(
       anything,
       variables: {filter: {name: {eqIgnoreCase: "Engineering"}}}
+    )
+  end
+
+  it "resolves an uppercase team key via the key filter" do
+    allow(client).to receive(:query).and_return("teams" => {"nodes" => [{"id" => uuid}]})
+    expect(described_class.call(client, "ENG")).to eq(uuid)
+    expect(client).to have_received(:query).with(
+      anything,
+      variables: {filter: {key: {eq: "ENG"}}}
+    )
+  end
+
+  it "falls back to the name filter when the key lookup misses" do
+    allow(client).to receive(:query)
+      .and_return({"teams" => {"nodes" => []}}, {"teams" => {"nodes" => [{"id" => uuid}]}})
+    expect(described_class.call(client, "ENG")).to eq(uuid)
+    expect(client).to have_received(:query).with(
+      anything,
+      variables: {filter: {name: {eqIgnoreCase: "ENG"}}}
     )
   end
 
