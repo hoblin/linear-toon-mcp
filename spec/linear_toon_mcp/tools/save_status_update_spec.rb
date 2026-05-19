@@ -81,17 +81,10 @@ RSpec.describe LinearToonMcp::Tools::SaveStatusUpdate do
       )
     end
 
-    it "ignores project/initiative args on update (parent comes from existing record)" do
-      allow(client).to receive(:query)
-        .with(a_string_matching(/projectUpdate\(id:/), anything)
-        .and_return("projectUpdate" => {"id" => "pu-1", "project" => {"id" => "p-1", "name" => "P"}})
-      allow(client).to receive(:query)
-        .with(a_string_matching(/projectUpdateUpdate/), anything)
-        .and_return("projectUpdateUpdate" => {"success" => true, "projectUpdate" => project_update})
-
-      # Caller passes initiative: "wrong" — should not raise XOR error, should ignore it.
-      described_class.call(id: "pu-1", initiative: "wrong", body: "edited")
-      expect(client).to have_received(:query).with(a_string_matching(/projectUpdateUpdate/), anything)
+    it "rejects calls that pass a parent alongside id" do
+      response = described_class.call(id: "pu-1", initiative: "wrong", body: "edited")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Cannot pass `initiative` on update")
     end
   end
 

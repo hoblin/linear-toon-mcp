@@ -19,12 +19,12 @@ module LinearToonMcp
       input_schema(
         properties: {
           id: {type: "string", description: "Comment ID. If provided, updates the existing comment"},
-          issue: {type: "string", description: "Issue UUID or identifier (create only; provide exactly one parent)"},
-          project: {type: "string", description: "Project name or UUID (create only; provide exactly one parent)"},
-          initiative: {type: "string", description: "Initiative name or UUID (create only; provide exactly one parent)"},
-          projectUpdate: {type: "string", description: "Project status update UUID (create only; provide exactly one parent)"},
+          issue: {type: "string", description: "Issue UUID or identifier (create only — rejected on update; provide exactly one parent)"},
+          project: {type: "string", description: "Project name or UUID (create only — rejected on update; provide exactly one parent)"},
+          initiative: {type: "string", description: "Initiative name or UUID (create only — rejected on update; provide exactly one parent)"},
+          projectUpdate: {type: "string", description: "Project status update UUID (create only — rejected on update; provide exactly one parent)"},
           body: {type: "string", description: "Comment body as Markdown"},
-          parentId: {type: "string", description: "Parent comment ID for threaded replies (create only)"}
+          parentId: {type: "string", description: "Parent comment ID for threaded replies (create only — rejected on update)"}
         },
         required: ["body"],
         additionalProperties: false
@@ -64,7 +64,12 @@ module LinearToonMcp
       # standard:disable Naming/VariableName
       def perform(body:, id: nil, issue: nil, project: nil, initiative: nil,
         projectUpdate: nil, parentId: nil)
-        id ? update(id, body) : create(body:, issue:, project:, initiative:, projectUpdate:, parentId:)
+        if id
+          reject_create_only_on_update(issue:, project:, initiative:, projectUpdate:, parentId:)
+          update(id, body)
+        else
+          create(body:, issue:, project:, initiative:, projectUpdate:, parentId:)
+        end
       end
 
       private
@@ -73,6 +78,13 @@ module LinearToonMcp
       def update(id, body)
         data = client.query(UPDATE_MUTATION, variables: {id: id, input: {body: body}})
         extract(data, "commentUpdate")
+      end
+
+      def reject_create_only_on_update(**create_only_fields)
+        given = create_only_fields.compact.keys
+        return if given.empty?
+        names = given.map { |k| "`#{k}`" }.join(", ")
+        raise Error, "Cannot pass #{names} on update — Linear doesn't support reparenting comments"
       end
 
       def create(body:, issue:, project:, initiative:, projectUpdate:, parentId:)

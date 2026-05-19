@@ -75,12 +75,27 @@ RSpec.describe LinearToonMcp::Tools::SaveComment do
         .and_return("commentUpdate" => {"success" => true, "comment" => comment_data})
     end
 
-    it "calls commentUpdate with id and new body; ignores any parent args" do
-      described_class.call(id: "c-1", body: "edited", issue: "ignored")
+    it "calls commentUpdate with id and new body" do
+      described_class.call(id: "c-1", body: "edited")
       expect(client).to have_received(:query).with(
         a_string_matching(/commentUpdate/),
         variables: {id: "c-1", input: {body: "edited"}}
       )
+    end
+
+    it "rejects calls that pass a parent alongside id" do
+      response = described_class.call(id: "c-1", body: "edited", issue: "VIB-1")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Cannot pass `issue` on update")
+      expect(response.content.first[:text]).to include("doesn't support reparenting")
+    end
+
+    it "rejects multiple create-only args at once" do
+      response = described_class.call(id: "c-1", body: "edited", issue: "VIB-1", parentId: "p-1")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Cannot pass")
+      expect(response.content.first[:text]).to include("`issue`")
+      expect(response.content.first[:text]).to include("`parentId`")
     end
   end
 
