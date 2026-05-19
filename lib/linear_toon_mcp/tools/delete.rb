@@ -4,15 +4,13 @@ module LinearToonMcp
   module Tools
     # Base class for delete-mutation tools. Submits the +MUTATION+
     # constant, asserts the +success+ flag, and returns
-    # +{success: true, entityId: ...}+ from Linear's +DeletePayload+.
-    # The mutation field derives from the class name:
+    # +{"success" => true, "entityId" => ...}+. The mutation field
+    # derives from the class name:
     #
     #   DeleteInitiative.mutation_name  # => "initiativeDelete"
     #
     # Subclasses define the +MUTATION+ constant and override {#variables}
-    # to build the +{id:}+ payload. Override the derived names with
-    # {.mutation} or {.entity} when they diverge from the class name
-    # (e.g., remove-link tools whose mutation targets a join record).
+    # to build the +{id:}+ payload.
     class Delete < Base
       class << self
         # Overrides the derived GraphQL mutation field name.
@@ -69,7 +67,7 @@ module LinearToonMcp
         result = data[self.class.mutation_name] or raise Error, "#{self.class.entity_label} deletion failed: no result returned"
         raise Error, "#{self.class.entity_label} deletion failed" unless result["success"]
 
-        {success: true, entityId: result["entityId"]}
+        {"success" => true, "entityId" => result["entityId"]}
       end
 
       # Subclass hook. Returns the GraphQL +{id:}+ hash for the mutation.

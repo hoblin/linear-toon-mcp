@@ -2,8 +2,8 @@
 
 module LinearToonMcp
   module Tools
-    # List initiatives in the Linear workspace with filtering and pagination.
-    # Returns TOON-encoded connection with id, name, status, owner, parent
+    # List initiatives in the Linear workspace with filtering and
+    # cursor-based pagination. Returns id, name, status, owner, parent
     # initiative, target date, and (optionally) linked projects.
     class ListInitiatives < List
       description "List initiatives with optional filters and pagination"
@@ -44,7 +44,7 @@ module LinearToonMcp
         parentInitiative { id name }
       GRAPHQL
 
-      PROJECTS_FIELDS = "initiativeToProjects { nodes { id project { id name } } }"
+      PROJECTS_FIELDS = "projects { nodes { id name } }"
 
       UUID_RE = Resolvers::UUID_RE
 

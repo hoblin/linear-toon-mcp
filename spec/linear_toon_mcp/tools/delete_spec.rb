@@ -31,6 +31,17 @@ RSpec.describe LinearToonMcp::Tools::Delete do
       expect(tool.mutation_name).to eq("initiativeToProjectDelete")
       expect(tool.entity_name).to eq("initiativeToProject")
     end
+
+    it "honors an explicit label setter" do
+      tool = Class.new(described_class) do
+        label "Custom Label"
+
+        def self.name
+          "LinearToonMcp::Tools::DeleteExample"
+        end
+      end
+      expect(tool.entity_label).to eq("Custom Label")
+    end
   end
 
   describe "#perform" do
@@ -61,7 +72,7 @@ RSpec.describe LinearToonMcp::Tools::Delete do
     it "submits the mutation and returns success + entityId" do
       allow(client).to receive(:query)
         .and_return("thingDelete" => {"success" => true, "entityId" => "1"})
-      expect(tool.new.perform(id: "1")).to eq(success: true, entityId: "1")
+      expect(tool.new.perform(id: "1")).to eq("success" => true, "entityId" => "1")
     end
 
     it "raises when the mutation payload is missing" do

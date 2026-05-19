@@ -2,10 +2,7 @@
 
 module LinearToonMcp
   module Tools
-    # Link a project to an initiative. Resolves both names to UUIDs via
-    # {Resolvers::Initiative} and {Resolvers::Project} and creates the
-    # {InitiativeToProject} join record. The returned +id+ is the join
-    # record's id — pass it to {RemoveProjectFromInitiative} to unlink.
+    # Link a project to an initiative. Accepts names or UUIDs for both.
     class AddProjectToInitiative < Create
       description "Link a project to an initiative"
 

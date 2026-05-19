@@ -41,6 +41,13 @@ RSpec.describe LinearToonMcp::Tools::SaveInitiative do
       expect(response).to be_a(MCP::Tool::Response).and be_error
       expect(response.content.first[:text]).to include("Initiative creation failed")
     end
+
+    it "raises when the response is missing the initiativeCreate key" do
+      allow(client).to receive(:query).and_return({})
+      response = described_class.call(name: "Q1")
+      expect(response).to be_a(MCP::Tool::Response).and be_error
+      expect(response.content.first[:text]).to include("Initiative creation failed: no result returned")
+    end
   end
 
   describe "update" do
@@ -63,6 +70,13 @@ RSpec.describe LinearToonMcp::Tools::SaveInitiative do
       response = described_class.call(id: "init-1", description: "Updated")
       expect(response).to be_a(MCP::Tool::Response).and be_error
       expect(response.content.first[:text]).to include("Initiative update failed")
+    end
+
+    it "raises when the response is missing the initiativeUpdate key" do
+      allow(client).to receive(:query).and_return({})
+      response = described_class.call(id: "init-1", description: "Updated")
+      expect(response).to be_a(MCP::Tool::Response).and be_error
+      expect(response.content.first[:text]).to include("Initiative update failed: no result returned")
     end
   end
 

@@ -56,7 +56,7 @@ module LinearToonMcp
         data = client.query(MUTATION, variables: {id: initiative_id})
         result = data["initiativeDelete"] or raise Error, "Initiative deletion failed: no result returned"
         raise Error, "Initiative deletion failed" unless result["success"]
-        {success: true, entityId: result["entityId"]}
+        {"success" => true, "entityId" => result["entityId"]}
       end
 
       def archive_initiative(initiative_id)

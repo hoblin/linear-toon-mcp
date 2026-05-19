@@ -36,6 +36,7 @@ module LinearToonMcp
         id
         name
         description
+        content
         status
         color
         targetDate

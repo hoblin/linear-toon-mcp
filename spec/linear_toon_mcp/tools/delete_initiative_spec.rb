@@ -35,6 +35,26 @@ RSpec.describe LinearToonMcp::Tools::DeleteInitiative do
       expect(response.content.first[:text]).to include("still has linked projects")
       expect(response.content.first[:text]).to include("archive: true")
     end
+
+    it "raises when the mutation reports success: false" do
+      allow(client).to receive(:query)
+        .with(a_string_matching(/initiativeDelete/), anything)
+        .and_return("initiativeDelete" => {"success" => false, "entityId" => nil})
+
+      response = described_class.call(query: "Q1")
+      expect(response).to be_a(MCP::Tool::Response).and be_error
+      expect(response.content.first[:text]).to include("Initiative deletion failed")
+    end
+
+    it "raises when the response is missing the initiativeDelete key" do
+      allow(client).to receive(:query)
+        .with(a_string_matching(/initiativeDelete/), anything)
+        .and_return({})
+
+      response = described_class.call(query: "Q1")
+      expect(response).to be_a(MCP::Tool::Response).and be_error
+      expect(response.content.first[:text]).to include("Initiative deletion failed: no result returned")
+    end
   end
 
   describe "archive: true" do
@@ -62,6 +82,26 @@ RSpec.describe LinearToonMcp::Tools::DeleteInitiative do
       response = described_class.call(query: "Q1", archive: true)
       text = response.content.first[:text]
       expect(text).to include("archivedAt")
+    end
+
+    it "raises when the mutation reports success: false" do
+      allow(client).to receive(:query)
+        .with(a_string_matching(/initiativeArchive/), anything)
+        .and_return("initiativeArchive" => {"success" => false, "entity" => nil})
+
+      response = described_class.call(query: "Q1", archive: true)
+      expect(response).to be_a(MCP::Tool::Response).and be_error
+      expect(response.content.first[:text]).to include("Initiative archive failed")
+    end
+
+    it "raises when the response is missing the initiativeArchive key" do
+      allow(client).to receive(:query)
+        .with(a_string_matching(/initiativeArchive/), anything)
+        .and_return({})
+
+      response = described_class.call(query: "Q1", archive: true)
+      expect(response).to be_a(MCP::Tool::Response).and be_error
+      expect(response.content.first[:text]).to include("Initiative archive failed: no result returned")
     end
   end
 end

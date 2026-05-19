@@ -25,6 +25,11 @@ RSpec.describe LinearToonMcp::Tools::ListInitiatives do
       expect(client).to have_received(:query).with(anything, variables: hash_including(first: 250))
     end
 
+    it "clamps limit below 1 up to 1" do
+      described_class.call(limit: 0)
+      expect(client).to have_received(:query).with(anything, variables: hash_including(first: 1))
+    end
+
     it "passes cursor to after" do
       described_class.call(cursor: "abc")
       expect(client).to have_received(:query).with(anything, variables: hash_including(after: "abc"))
@@ -109,18 +114,18 @@ RSpec.describe LinearToonMcp::Tools::ListInitiatives do
     end
 
     describe "includeProjects" do
-      it "adds initiativeToProjects to the GraphQL query body when true" do
+      it "adds projects to the GraphQL query body when true" do
         described_class.call(includeProjects: true)
         expect(client).to have_received(:query).with(
-          a_string_matching(/initiativeToProjects \{ nodes \{ id project \{ id name \} \} \}/),
+          a_string_matching(/projects \{ nodes \{ id name \} \}/),
           anything
         )
       end
 
-      it "omits initiativeToProjects when false (default)" do
+      it "omits projects when false (default)" do
         described_class.call
         expect(client).to have_received(:query).with(
-          satisfy { |q| !q.include?("initiativeToProjects") },
+          satisfy { |q| !q.include?("projects { nodes") },
           anything
         )
       end
