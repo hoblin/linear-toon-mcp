@@ -9,13 +9,13 @@ RSpec.describe LinearToonMcp::Tools::ListStatusUpdates do
   before { LinearToonMcp.client = client }
 
   describe "XOR parent validation" do
-    it "rejects calls with neither project: nor initiative:" do
+    it "rejects calls with neither project nor initiative" do
       response = described_class.call
       expect(response).to be_a(MCP::Tool::Response).and be_error
       expect(response.content.first[:text]).to include("exactly one of `project` or `initiative`")
     end
 
-    it "rejects calls with both project: and initiative:" do
+    it "rejects calls with both project and initiative" do
       response = described_class.call(project: "P", initiative: "I")
       expect(response).to be_a(MCP::Tool::Response).and be_error
       expect(response.content.first[:text]).to include("exactly one of `project` or `initiative`")
