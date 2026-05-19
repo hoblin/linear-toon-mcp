@@ -63,6 +63,10 @@ claude mcp add linear-toon -e LINEAR_API_KEY=lin_api_xxxxx -- linear-toon-mcp
 | `delete_initiative` | Delete an initiative by name or ID. Hard-deletes via `initiativeDelete` by default; `archive: true` soft-deletes via `initiativeArchive`. Hard delete is refused while projects are still linked — unlink first or archive. |
 | `add_project_to_initiative` | Link a project to an initiative. Accepts names or UUIDs for both. |
 | `remove_project_from_initiative` | Unlink a project from an initiative. Accepts names or UUIDs for both; finds and deletes the underlying join record. |
+| `list_status_updates` | List status updates posted to a project or initiative. Exactly one of `project:` or `initiative:` (name or UUID) is required. Cursor-paginated. |
+| `get_status_update` | Retrieve a status update by ID. Works for both project and initiative updates — internally tries each. |
+| `save_status_update` | Create or update a status update on a project or initiative (id presence determines). `health` enum: `onTrack` / `atRisk` / `offTrack`. Body is Markdown. |
+| `delete_status_update` | Archive a status update by ID. Linear has no hard-delete for status updates; this maps to `*UpdateArchive`. |
 
 ## Development
 
