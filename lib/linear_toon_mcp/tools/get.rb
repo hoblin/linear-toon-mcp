@@ -10,8 +10,8 @@ module LinearToonMcp
     #   GetIssue.entity_name    # => "issue"
     #   GetProject.entity_name  # => "project"
     #
-    # Subclasses define the +QUERY+ constant and optionally override
-    # {#variables} when the lookup key needs resolving.
+    # Subclasses define the +QUERY+ constant and override {#variables}
+    # when the lookup key needs resolving first (e.g., name/slug → UUID).
     class Get < Base
       class << self
         # Overrides the derived GraphQL entity field name.

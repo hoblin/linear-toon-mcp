@@ -13,13 +13,13 @@ module LinearToonMcp
   class Error < StandardError; end
 
   class << self
-    # Returns the active Linear API client. Lazily instantiated from
-    # +LINEAR_API_KEY+ on first access. Assignable via {.client=} for
-    # injection (tests, custom configuration).
+    # Returns the active Linear API client, lazily instantiated from
+    # +LINEAR_API_KEY+ on first access.
     def client
       @client ||= Client.new
     end
 
+    # Assigns the active Linear API client.
     attr_writer :client
   end
 

@@ -12,7 +12,7 @@ RSpec.configure do |config|
   end
 
   config.before do
-    LinearToonMcp.instance_variable_set(:@client, nil)
+    LinearToonMcp.client = nil
   end
 
   config.order = :random

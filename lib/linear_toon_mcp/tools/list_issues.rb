@@ -83,7 +83,7 @@ module LinearToonMcp
         variables[:filter] = filter unless filter.empty?
         variables[:after] = cursor if cursor
 
-        data = client.query(self.class::QUERY, variables: variables)
+        data = client.query(self.class.query_string, variables: variables)
         data["issues"] or raise Error, "Unexpected response: missing issues field"
       end
 

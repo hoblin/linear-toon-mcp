@@ -9,14 +9,11 @@ module LinearToonMcp
     #   ListTeams.connection_name        # => "teams"
     #   ListIssueLabels.connection_name  # => "issueLabels"
     #
-    # Override with {.connection} when the GraphQL field diverges:
+    # Override with {.connection} when the GraphQL field diverges
+    # (e.g., +ListIssueStatuses+ → +workflowStates+).
     #
-    #   class ListIssueStatuses < Tools::List
-    #     connection :workflowStates
-    #   end
-    #
-    # Subclasses define the +QUERY+ constant and optionally override
-    # {#variables} to compute GraphQL variables from inputs.
+    # Subclasses define the +QUERY+ constant and override {#variables}
+    # to compute GraphQL variables from inputs.
     class List < Base
       class << self
         # Overrides the derived GraphQL connection name.
