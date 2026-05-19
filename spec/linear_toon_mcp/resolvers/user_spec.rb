@@ -4,24 +4,26 @@ RSpec.describe LinearToonMcp::Resolvers::User do
   let(:client) { instance_double(LinearToonMcp::Client) }
   let(:uuid) { "12345678-1234-1234-1234-123456789012" }
 
+  before { LinearToonMcp.client = client }
+
   it "passes through UUIDs unchanged" do
-    expect(described_class.call(client, value: uuid)).to eq(uuid)
+    expect(described_class.call(value: uuid)).to eq(uuid)
   end
 
   it "resolves 'me' through the viewer shortcut" do
     allow(client).to receive(:query).and_return("viewer" => {"id" => uuid})
-    expect(described_class.call(client, value: "me")).to eq(uuid)
+    expect(described_class.call(value: "me")).to eq(uuid)
   end
 
   it "raises when viewer returns no id" do
     allow(client).to receive(:query).and_return("viewer" => {})
-    expect { described_class.call(client, value: "me") }
+    expect { described_class.call(value: "me") }
       .to raise_error(LinearToonMcp::Error, /Could not resolve current user/)
   end
 
   it "uses the email filter when the value contains '@'" do
     allow(client).to receive(:query).and_return("users" => {"nodes" => [{"id" => uuid}]})
-    described_class.call(client, value: "alice@example.com")
+    described_class.call(value: "alice@example.com")
     expect(client).to have_received(:query).with(
       anything,
       variables: {filter: {email: {eq: "alice@example.com"}}}
@@ -30,7 +32,7 @@ RSpec.describe LinearToonMcp::Resolvers::User do
 
   it "falls back to the name filter otherwise" do
     allow(client).to receive(:query).and_return("users" => {"nodes" => [{"id" => uuid}]})
-    described_class.call(client, value: "Alice")
+    described_class.call(value: "Alice")
     expect(client).to have_received(:query).with(
       anything,
       variables: {filter: {name: {eqIgnoreCase: "Alice"}}}
@@ -39,7 +41,7 @@ RSpec.describe LinearToonMcp::Resolvers::User do
 
   it "raises when user not found" do
     allow(client).to receive(:query).and_return("users" => {"nodes" => []})
-    expect { described_class.call(client, value: "Nobody") }
+    expect { described_class.call(value: "Nobody") }
       .to raise_error(LinearToonMcp::Error, /\AUser not found: Nobody\z/)
   end
 end

@@ -33,8 +33,9 @@ RSpec.describe LinearToonMcp::Resolvers::Base do
         label "Thing"
         lookup_by :name
       end
+      LinearToonMcp.client = client
       allow(client).to receive(:query).and_return("things" => {"nodes" => []})
-      expect { resolver.call(client, value: "Missing") }
+      expect { resolver.call(value: "Missing") }
         .to raise_error(LinearToonMcp::Error, /\AThing not found: Missing\z/)
     end
   end

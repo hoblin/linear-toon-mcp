@@ -2,12 +2,13 @@
 
 module LinearToonMcp
   # Resolvers translate human-friendly identifiers — UUIDs, names, emails,
-  # slugs, numbers, the literal "me" — into Linear API UUIDs.
+  # slugs, numbers, the literal "me" — into Linear API UUIDs. They read
+  # {LinearToonMcp.client} for API calls.
   #
   # @example
-  #   Resolvers::Team.call(client, "Engineering")
-  #   Resolvers::WorkflowState.call(client, "In Progress", team_id: tid)
-  #   Resolvers::IssueLabel.call_many(client, ["bug", "p1"], team_id: tid)
+  #   Resolvers::Team.call(value: "Engineering")
+  #   Resolvers::WorkflowState.call(value: "In Progress", team_id: tid)
+  #   Resolvers::IssueLabel.call_many(values: ["bug", "p1"], team_id: tid)
   module Resolvers
     UUID_RE = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/
     NUMERIC_RE = /\A\d+\z/

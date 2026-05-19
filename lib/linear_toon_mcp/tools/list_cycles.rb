@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-require "toon"
-
 module LinearToonMcp
   module Tools
     # List cycles for a Linear team.
     # Returns TOON-encoded array of cycles with id, name, number, startsAt, and endsAt.
-    class ListCycles < MCP::Tool
+    class ListCycles < List
       description "List cycles for a team"
 
       annotations(
@@ -29,20 +27,10 @@ module LinearToonMcp
         }
       GRAPHQL
 
-      class << self
-        # @param team [String] team name or UUID
-        # @param server_context [Hash, nil] must contain +:client+ key with a {Client}
-        # @return [MCP::Tool::Response] TOON-encoded cycle list or error
-        def call(team:, server_context: nil)
-          client = server_context&.dig(:client) or raise Error, "client missing from server_context"
-          team_id = Resolvers::Team.call(client, value: team)
-          data = client.query(QUERY, variables: {filter: {team: {id: {eq: team_id}}}})
-          cycles = data["cycles"] or raise Error, "Unexpected response: missing cycles field"
-          text = Toon.encode(cycles)
-          MCP::Tool::Response.new([{type: "text", text:}])
-        rescue Error => e
-          MCP::Tool::Response.new([{type: "text", text: e.message}], error: true)
-        end
+      # @param team [String] team name or UUID
+      def variables(team:)
+        team_id = Resolvers::Team.call(value: team)
+        {filter: {team: {id: {eq: team_id}}}}
       end
     end
   end

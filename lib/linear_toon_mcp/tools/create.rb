@@ -1,0 +1,68 @@
+# frozen_string_literal: true
+
+module LinearToonMcp
+  module Tools
+    # Base class for create-mutation tools. Submits the +MUTATION+
+    # constant, asserts the +success+ flag, and returns the created
+    # entity. The mutation field and entity key derive from the class
+    # name:
+    #
+    #   CreateIssue.mutation_name    # => "issueCreate"
+    #   CreateIssue.entity_name      # => "issue"
+    #   CreateComment.mutation_name  # => "commentCreate"
+    #
+    # Subclasses define the +MUTATION+ constant and override {#variables}
+    # to construct the GraphQL input.
+    class Create < Base
+      class << self
+        # Returns the GraphQL mutation field name.
+        def mutation_name
+          @mutation_name ||= "#{entity_name}Create"
+        end
+
+        # Returns the entity field name inside the mutation payload.
+        def entity_name
+          @entity_name ||= derive_entity_name
+        end
+
+        # Returns the entity label for error messages.
+        #
+        #   CreateIssue.entity_label  # => "Issue"
+        def entity_label
+          @entity_label ||= name.split("::").last.sub(/\ACreate/, "")
+        end
+
+        # Returns the GraphQL mutation — the +MUTATION+ constant on the
+        # subclass.
+        def mutation_string
+          const_get(:MUTATION)
+        end
+
+        private
+
+        def derive_entity_name
+          entity = name.split("::").last.sub(/\ACreate/, "")
+          entity[0].downcase + entity[1..]
+        end
+      end
+
+      # Submits {.mutation_string} with {#variables}, validates the
+      # +success+ flag, and returns the created entity.
+      #
+      # @raise [Error] when the mutation fails
+      def perform(**params)
+        data = client.query(self.class.mutation_string, variables: variables(**params))
+        result = data[self.class.mutation_name] or raise Error, "#{self.class.entity_label} creation failed: no result returned"
+        raise Error, "#{self.class.entity_label} creation failed" unless result["success"]
+
+        result[self.class.entity_name]
+      end
+
+      # Subclass hook. Returns the GraphQL variables hash for the
+      # mutation. Subclasses must implement.
+      def variables(**)
+        raise NotImplementedError, "#{self.class.name} must implement #variables"
+      end
+    end
+  end
+end

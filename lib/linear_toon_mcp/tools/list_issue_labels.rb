@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-require "toon"
-
 module LinearToonMcp
   module Tools
     # List issue labels in the Linear workspace, optionally scoped to a team.
     # Returns TOON-encoded array of labels with id and name.
-    class ListIssueLabels < MCP::Tool
+    class ListIssueLabels < List
       description "List issue labels, optionally scoped to a team"
 
       annotations(
@@ -28,26 +26,11 @@ module LinearToonMcp
         }
       GRAPHQL
 
-      class << self
-        # @param team [String, nil] team name or UUID (optional scope)
-        # @param server_context [Hash, nil] must contain +:client+ key with a {Client}
-        # @return [MCP::Tool::Response] TOON-encoded label list or error
-        def call(team: nil, server_context: nil)
-          client = server_context&.dig(:client) or raise Error, "client missing from server_context"
-
-          variables = {}
-          if team
-            team_id = Resolvers::Team.call(client, value: team)
-            variables[:filter] = {team: {id: {eq: team_id}}}
-          end
-
-          data = client.query(QUERY, variables:)
-          labels = data["issueLabels"] or raise Error, "Unexpected response: missing issueLabels field"
-          text = Toon.encode(labels)
-          MCP::Tool::Response.new([{type: "text", text:}])
-        rescue Error => e
-          MCP::Tool::Response.new([{type: "text", text: e.message}], error: true)
-        end
+      # @param team [String, nil] team name or UUID (optional scope)
+      def variables(team: nil)
+        return {} unless team
+        team_id = Resolvers::Team.call(value: team)
+        {filter: {team: {id: {eq: team_id}}}}
       end
     end
   end

@@ -2,7 +2,9 @@
 
 RSpec.describe LinearToonMcp, ".server" do
   let(:client) { instance_double(LinearToonMcp::Client) }
-  let(:server) { described_class.server(client:) }
+  let(:server) { described_class.server }
+
+  before { described_class.client = client }
 
   describe "initialize" do
     subject(:result) do

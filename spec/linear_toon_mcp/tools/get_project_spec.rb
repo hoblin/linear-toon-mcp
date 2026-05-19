@@ -32,7 +32,8 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
     end
 
     before do
-      allow(LinearToonMcp::Resolvers::Project).to receive(:call).with(client, value: query).and_return(project_id)
+      LinearToonMcp.client = client
+      allow(LinearToonMcp::Resolvers::Project).to receive(:call).with(value: query).and_return(project_id)
       allow(client).to receive(:query).and_return("project" => project_data)
     end
 
@@ -45,7 +46,7 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
 
     it "resolves project by query and queries Linear" do
       response
-      expect(LinearToonMcp::Resolvers::Project).to have_received(:call).with(client, value: "My Project")
+      expect(LinearToonMcp::Resolvers::Project).to have_received(:call).with(value: "My Project")
       expect(client).to have_received(:query).with(
         a_string_matching(/project\(id: \$id\)/),
         variables: {id: project_id}
@@ -56,12 +57,12 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
       let(:query) { project_id }
 
       before do
-        allow(LinearToonMcp::Resolvers::Project).to receive(:call).with(client, value: project_id).and_return(project_id)
+        allow(LinearToonMcp::Resolvers::Project).to receive(:call).with(value: project_id).and_return(project_id)
       end
 
       it "passes UUID through resolver" do
         response
-        expect(LinearToonMcp::Resolvers::Project).to have_received(:call).with(client, value: project_id)
+        expect(LinearToonMcp::Resolvers::Project).to have_received(:call).with(value: project_id)
       end
     end
 
@@ -69,12 +70,12 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
       let(:query) { "my-project" }
 
       before do
-        allow(LinearToonMcp::Resolvers::Project).to receive(:call).with(client, value: "my-project").and_return(project_id)
+        allow(LinearToonMcp::Resolvers::Project).to receive(:call).with(value: "my-project").and_return(project_id)
       end
 
       it "resolves slug through resolver" do
         response
-        expect(LinearToonMcp::Resolvers::Project).to have_received(:call).with(client, value: "my-project")
+        expect(LinearToonMcp::Resolvers::Project).to have_received(:call).with(value: "my-project")
       end
     end
 
@@ -173,15 +174,6 @@ RSpec.describe LinearToonMcp::Tools::GetProject do
       it "returns an error response" do
         expect(response).to be_a(MCP::Tool::Response).and be_error
         expect(response.content.first[:text]).to include("Project not found: My Project")
-      end
-    end
-
-    context "when server_context has no client" do
-      subject(:response) { described_class.call(query:, server_context: {}) }
-
-      it "returns an error response" do
-        expect(response).to be_a(MCP::Tool::Response).and be_error
-        expect(response.content.first[:text]).to include("client missing")
       end
     end
 

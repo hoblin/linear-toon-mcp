@@ -132,32 +132,30 @@ module LinearToonMcp
           GRAPHQL
         end
 
-        # Resolves +value+ to a UUID.
+        # Resolves +value+ to a UUID using {LinearToonMcp.client}.
         #
-        #   Team.call(client, value: "Engineering")
-        #   WorkflowState.call(client, value: "Done", team_id: tid)
+        #   Team.call(value: "Engineering")
+        #   WorkflowState.call(value: "Done", team_id: tid)
         #
-        # @param client [Client]
         # @param value [String]
         # @param scope [Hash] parent-scope kwargs (e.g. +team_id:+)
         # @return [String] resolved UUID
         # @raise [Error] when no attribute resolves the value
-        def call(client, value:, **scope)
-          new(client, **scope).resolve(value)
+        def call(value:, **scope)
+          new(**scope).resolve(value)
         end
 
         # Resolves each value via {.call}, forwarding scope.
         #
-        #   IssueLabel.call_many(client, values: ["bug", "p1"], team_id: tid)
+        #   IssueLabel.call_many(values: ["bug", "p1"], team_id: tid)
         #
         # @return [Array<String>]
-        def call_many(client, values:, **scope)
-          values.map { |v| call(client, value: v, **scope) }
+        def call_many(values:, **scope)
+          values.map { |v| call(value: v, **scope) }
         end
       end
 
-      def initialize(client, **scope)
-        @client = client
+      def initialize(**scope)
         @scope = scope
       end
 
@@ -182,7 +180,11 @@ module LinearToonMcp
 
       private
 
-      attr_reader :client, :scope
+      attr_reader :scope
+
+      def client
+        LinearToonMcp.client
+      end
 
       def scope_filter
         cfg = self.class.scope_config

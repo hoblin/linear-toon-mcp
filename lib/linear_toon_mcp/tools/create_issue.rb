@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "toon"
-
 module LinearToonMcp
   module Tools
     # Create a new Linear issue with full parameter support.
@@ -10,7 +8,7 @@ module LinearToonMcp
     # duplicateOf) and parentId accept either issue UUIDs or human identifiers
     # (e.g., LIN-123); both are passed through to Linear unchanged.
     # Supports post-mutation relations and links.
-    class CreateIssue < MCP::Tool
+    class CreateIssue < Create
       description "Create a new Linear issue"
 
       annotations(
@@ -75,96 +73,81 @@ module LinearToonMcp
       GRAPHQL
 
       # standard:disable Naming/VariableName, Metrics/MethodLength
-      class << self
-        # @param title [String] issue title
-        # @param team [String] team name or UUID
-        # @param server_context [Hash, nil] must contain +:client+ key
-        # @return [MCP::Tool::Response] TOON-encoded issue or error
-        def call(title:, team:, server_context: nil, **kwargs)
-          client = server_context&.dig(:client) or raise Error, "client missing from server_context"
-          raise Error, "Cannot specify both assignee and delegate" if kwargs.key?(:assignee) && kwargs.key?(:delegate)
+      def perform(**kwargs)
+        raise Error, "Cannot specify both assignee and delegate" if kwargs.key?(:assignee) && kwargs.key?(:delegate)
+        issue = super
+        warnings = post_create(issue["id"], **kwargs)
+        warnings.empty? ? issue : respond_with_warnings(issue, warnings, context: "issue was created")
+      end
 
-          team_id = Resolvers::Team.call(client, value: team)
-          input = {title:, teamId: team_id}
+      def variables(title:, team:, **kwargs)
+        team_id = Resolvers::Team.call(value: team)
+        input = {title:, teamId: team_id}
+        add_direct_fields(input, **kwargs)
+        resolve_fields(input, team_id, **kwargs)
+        {input:}
+      end
 
-          add_direct_fields(input, **kwargs)
-          resolve_fields(input, client, team_id, **kwargs)
+      private
 
-          data = client.query(MUTATION, variables: {input:})
-          result = data["issueCreate"] or raise Error, "Issue creation failed: no result returned"
-          raise Error, "Issue creation failed" unless result["success"]
-
-          issue = result["issue"]
-          warnings = post_create(client, issue["id"], **kwargs)
-
-          text = Toon.encode(issue)
-          text += "\nWARNING (issue was created): #{warnings.join("; ")}" if warnings.any?
-          MCP::Tool::Response.new([{type: "text", text:}])
+      def post_create(issue_id, links: nil, **kwargs)
+        warnings = []
+        begin
+          create_relations(issue_id, **kwargs)
         rescue Error => e
-          MCP::Tool::Response.new([{type: "text", text: e.message}], error: true)
+          warnings << e.message
         end
-
-        private
-
-        def post_create(client, issue_id, links: nil, **kwargs)
-          warnings = []
-          begin
-            create_relations(client, issue_id, **kwargs)
-          rescue Error => e
-            warnings << e.message
-          end
-          begin
-            create_links(client, issue_id, links)
-          rescue Error => e
-            warnings << e.message
-          end
-          warnings
+        begin
+          create_links(issue_id, links)
+        rescue Error => e
+          warnings << e.message
         end
+        warnings
+      end
 
-        def add_direct_fields(input, description: nil, priority: nil, estimate: nil,
-          dueDate: nil, parentId: nil, **)
-          input[:description] = description if description
-          input[:priority] = priority if priority
-          input[:estimate] = estimate if estimate
-          input[:dueDate] = dueDate if dueDate
-          input[:parentId] = parentId if parentId
+      def add_direct_fields(input, description: nil, priority: nil, estimate: nil,
+        dueDate: nil, parentId: nil, **)
+        input[:description] = description if description
+        input[:priority] = priority if priority
+        input[:estimate] = estimate if estimate
+        input[:dueDate] = dueDate if dueDate
+        input[:parentId] = parentId if parentId
+      end
+
+      def resolve_fields(input, team_id, assignee: nil, state: nil, labels: nil,
+        project: nil, cycle: nil, milestone: nil, delegate: nil, **)
+        input[:assigneeId] = Resolvers::User.call(value: delegate || assignee) if assignee || delegate
+        input[:stateId] = Resolvers::WorkflowState.call(value: state, team_id:) if state
+        input[:labelIds] = Resolvers::IssueLabel.call_many(values: labels, team_id:) if labels
+        project_id = Resolvers::Project.call(value: project) if project
+        input[:projectId] = project_id if project_id
+        input[:cycleId] = Resolvers::Cycle.call(value: cycle, team_id:) if cycle
+        if milestone
+          raise Error, "milestone requires project" unless project_id
+          input[:projectMilestoneId] = Resolvers::ProjectMilestone.call(value: milestone, project_id:)
         end
+      end
 
-        def resolve_fields(input, client, team_id, assignee: nil, state: nil, labels: nil,
-          project: nil, cycle: nil, milestone: nil, delegate: nil, **)
-          input[:assigneeId] = Resolvers::User.call(client, value: delegate || assignee) if assignee || delegate
-          input[:stateId] = Resolvers::WorkflowState.call(client, value: state, team_id:) if state
-          input[:labelIds] = Resolvers::IssueLabel.call_many(client, values: labels, team_id:) if labels
-          project_id = Resolvers::Project.call(client, value: project) if project
-          input[:projectId] = project_id if project_id
-          input[:cycleId] = Resolvers::Cycle.call(client, value: cycle, team_id:) if cycle
-          if milestone
-            raise Error, "milestone requires project" unless project_id
-            input[:projectMilestoneId] = Resolvers::ProjectMilestone.call(client, value: milestone, project_id:)
-          end
-        end
+      def create_relations(issue_id, blocks: nil, relatedTo: nil, duplicateOf: nil, **)
+        Array(blocks).each { |id| create_relation(issue_id, id, "blocks") }
+        Array(relatedTo).each { |id| create_relation(issue_id, id, "related") }
+        create_relation(issue_id, duplicateOf, "duplicate") if duplicateOf
+      end
 
-        def create_relations(client, issue_id, blocks: nil, relatedTo: nil, duplicateOf: nil, **)
-          Array(blocks).each { |id| create_relation(client, issue_id, id, "blocks") }
-          Array(relatedTo).each { |id| create_relation(client, issue_id, id, "related") }
-          create_relation(client, issue_id, duplicateOf, "duplicate") if duplicateOf
-        end
+      def create_relation(issue_id, related_issue_id, type)
+        input = {issueId: issue_id, relatedIssueId: related_issue_id, type:}
+        data = client.query(RELATION_MUTATION, variables: {input:})
+        return if data.dig("issueRelationCreate", "success")
+        raise Error, "Failed to create #{type} relation with #{related_issue_id}"
+      end
 
-        def create_relation(client, issue_id, related_issue_id, type)
-          input = {issueId: issue_id, relatedIssueId: related_issue_id, type:}
-          data = client.query(RELATION_MUTATION, variables: {input:})
-          return if data.dig("issueRelationCreate", "success")
-          raise Error, "Failed to create #{type} relation with #{related_issue_id}"
-        end
+      def create_links(issue_id, links)
+        return unless links
 
-        def create_links(client, issue_id, links)
-          return unless links
-
-          links.each do |link|
-            data = client.query(LINK_MUTATION, variables: {url: link[:url], issueId: issue_id, title: link[:title]})
-            next if data.dig("attachmentLinkURL", "success")
-            raise Error, "Failed to attach link: #{link[:url]}"
-          end
+        links.each do |link|
+          data = client.query(LINK_MUTATION, variables: {url: link[:url], issueId: issue_id, title: link[:title]})
+          next if data.dig("attachmentLinkURL", "success")
+          raise Error, "Failed to attach link: #{link[:url]}"
         end
       end
       # standard:enable Naming/VariableName, Metrics/MethodLength
