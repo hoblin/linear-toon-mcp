@@ -19,8 +19,8 @@ module LinearToonMcp
       input_schema(
         properties: {
           id: {type: "string", description: "Status update ID. If provided, updates the existing record"},
-          project: {type: "string", description: "Project name or ID (create only; required when id is absent)"},
-          initiative: {type: "string", description: "Initiative name or ID (create only; required when id is absent)"},
+          project: {type: "string", description: "Project name or ID (create only — rejected on update; required when id is absent)"},
+          initiative: {type: "string", description: "Initiative name or ID (create only — rejected on update; required when id is absent)"},
           body: {type: "string", description: "Update body as Markdown"},
           health: {type: "string", description: "Status update health indicator", enum: ["onTrack", "atRisk", "offTrack"]},
           isDiffHidden: {type: "boolean", description: "Hide auto-generated diff from the update"}
@@ -92,7 +92,12 @@ module LinearToonMcp
       # standard:disable Naming/VariableName
       def perform(id: nil, project: nil, initiative: nil, **fields)
         input = build_input(fields)
-        id ? update(id, input) : create(project: project, initiative: initiative, input: input)
+        if id
+          reject_create_only_on_update(project: project, initiative: initiative)
+          update(id, input)
+        else
+          create(project: project, initiative: initiative, input: input)
+        end
       end
 
       private
@@ -120,6 +125,12 @@ module LinearToonMcp
           submit(INITIATIVE_UPDATE_MUTATION, "initiativeUpdateUpdate", "initiativeUpdate",
             variables: {id: id, input: input})
         end
+      end
+
+      def reject_create_only_on_update(**create_only_fields)
+        given = create_only_fields.compact.keys
+        return if given.empty?
+        raise Error, "Cannot pass #{given.map { |k| "`#{k}`" }.join(", ")} on update — the parent of a status update is fixed at creation"
       end
 
       def exactly_one_parent(project:, initiative:)
