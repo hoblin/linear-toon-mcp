@@ -6,11 +6,11 @@ module LinearToonMcp
     # attributes and any required parent scope. UUIDs always pass through
     # unchanged regardless of the declared attributes.
     #
-    # Defaults derive from the class name with +Resolver+ stripped:
+    # Defaults derive from the class name:
     #
-    #   WorkflowStateResolver.connection_name   # => "workflowStates"
-    #   WorkflowStateResolver.filter_type_name  # => "WorkflowStateFilter"
-    #   WorkflowStateResolver.entity_label      # => "State"
+    #   WorkflowState.connection_name   # => "workflowStates"
+    #   WorkflowState.filter_type_name  # => "WorkflowStateFilter"
+    #   WorkflowState.entity_label      # => "State"
     #
     # Override any default via {.connection}, {.filter_type}, or {.label}.
     class Base
@@ -45,7 +45,7 @@ module LinearToonMcp
       class << self
         # Declares lookup attributes for this resolver, in priority order.
         #
-        #   class TeamResolver < Base
+        #   class Team < Base
         #     lookup_by :key, :name
         #   end
         #
@@ -58,7 +58,7 @@ module LinearToonMcp
         # implies the GraphQL filter key — +:team_id+ produces
         # +{team: {id: {eq: value}}}+.
         #
-        #   class CycleResolver < Base
+        #   class Cycle < Base
         #     scoped_by :team_id
         #     lookup_by :name
         #   end
@@ -96,14 +96,14 @@ module LinearToonMcp
 
         # Returns the GraphQL connection name.
         #
-        #   WorkflowStateResolver.connection_name  # => "workflowStates"
+        #   WorkflowState.connection_name  # => "workflowStates"
         def connection_name
           @connection ||= "#{entity_name[0].downcase}#{entity_name[1..]}s"
         end
 
         # Returns the GraphQL filter input type name.
         #
-        #   WorkflowStateResolver.filter_type_name  # => "WorkflowStateFilter"
+        #   WorkflowState.filter_type_name  # => "WorkflowStateFilter"
         def filter_type_name
           @filter_type ||= "#{entity_name}Filter"
         end
@@ -111,16 +111,16 @@ module LinearToonMcp
         # Returns the not-found label — the trailing CamelCase word of
         # {.entity_name}.
         #
-        #   WorkflowStateResolver.entity_label  # => "State"
+        #   WorkflowState.entity_label  # => "State"
         def entity_label
           @label ||= entity_name.scan(/[A-Z][a-z]+/).last || entity_name
         end
 
-        # Returns the class name with +Resolver+ stripped.
+        # Returns the entity name.
         #
-        #   WorkflowStateResolver.entity_name  # => "WorkflowState"
+        #   WorkflowState.entity_name  # => "WorkflowState"
         def entity_name
-          @entity_name ||= name.split("::").last.sub(/Resolver\z/, "")
+          @entity_name ||= name.split("::").last
         end
 
         # Returns the memoized GraphQL query.
@@ -134,8 +134,8 @@ module LinearToonMcp
 
         # Resolves +value+ to a UUID.
         #
-        #   TeamResolver.call(client, value: "Engineering")
-        #   WorkflowStateResolver.call(client, value: "Done", team_id: tid)
+        #   Team.call(client, value: "Engineering")
+        #   WorkflowState.call(client, value: "Done", team_id: tid)
         #
         # @param client [Client]
         # @param value [String]
@@ -148,7 +148,7 @@ module LinearToonMcp
 
         # Resolves each value via {.call}, forwarding scope.
         #
-        #   IssueLabelResolver.call_many(client, values: ["bug", "p1"], team_id: tid)
+        #   IssueLabel.call_many(client, values: ["bug", "p1"], team_id: tid)
         #
         # @return [Array<String>]
         def call_many(client, values:, **scope)

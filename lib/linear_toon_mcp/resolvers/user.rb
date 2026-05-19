@@ -3,7 +3,7 @@
 module LinearToonMcp
   module Resolvers
     # Resolves a Linear user by email, name, or the literal +"me"+.
-    class UserResolver < Base
+    class User < Base
       VIEWER_QUERY = "query { viewer { id } }"
 
       lookup_by :email, :name

@@ -5,9 +5,9 @@ module LinearToonMcp
   # slugs, numbers, the literal "me" — into Linear API UUIDs.
   #
   # @example
-  #   Resolvers::TeamResolver.call(client, "Engineering")
-  #   Resolvers::WorkflowStateResolver.call(client, "In Progress", team_id: tid)
-  #   Resolvers::IssueLabelResolver.call_many(client, ["bug", "p1"], team_id: tid)
+  #   Resolvers::Team.call(client, "Engineering")
+  #   Resolvers::WorkflowState.call(client, "In Progress", team_id: tid)
+  #   Resolvers::IssueLabel.call_many(client, ["bug", "p1"], team_id: tid)
   module Resolvers
     UUID_RE = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/
     NUMERIC_RE = /\A\d+\z/
@@ -15,10 +15,10 @@ module LinearToonMcp
 end
 
 require_relative "resolvers/base"
-require_relative "resolvers/team_resolver"
-require_relative "resolvers/user_resolver"
-require_relative "resolvers/workflow_state_resolver"
-require_relative "resolvers/issue_label_resolver"
-require_relative "resolvers/project_resolver"
-require_relative "resolvers/cycle_resolver"
-require_relative "resolvers/project_milestone_resolver"
+require_relative "resolvers/team"
+require_relative "resolvers/user"
+require_relative "resolvers/workflow_state"
+require_relative "resolvers/issue_label"
+require_relative "resolvers/project"
+require_relative "resolvers/cycle"
+require_relative "resolvers/project_milestone"

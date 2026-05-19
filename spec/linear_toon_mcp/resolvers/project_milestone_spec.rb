@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe LinearToonMcp::Resolvers::ProjectMilestoneResolver do
+RSpec.describe LinearToonMcp::Resolvers::ProjectMilestone do
   let(:client) { instance_double(LinearToonMcp::Client) }
   let(:uuid) { "12345678-1234-1234-1234-123456789012" }
   let(:project_id) { uuid }

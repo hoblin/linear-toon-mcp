@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe LinearToonMcp::Resolvers::WorkflowStateResolver do
+RSpec.describe LinearToonMcp::Resolvers::WorkflowState do
   let(:client) { instance_double(LinearToonMcp::Client) }
   let(:uuid) { "12345678-1234-1234-1234-123456789012" }
   let(:team_id) { uuid }

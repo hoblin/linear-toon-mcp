@@ -3,7 +3,7 @@
 module LinearToonMcp
   module Resolvers
     # Resolves a Linear cycle by number or name. Team-scoped.
-    class CycleResolver < Base
+    class Cycle < Base
       scoped_by :team_id
       lookup_by :number, :name
     end

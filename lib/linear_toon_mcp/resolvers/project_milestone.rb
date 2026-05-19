@@ -3,7 +3,7 @@
 module LinearToonMcp
   module Resolvers
     # Resolves a Linear project milestone by name. Project-scoped.
-    class ProjectMilestoneResolver < Base
+    class ProjectMilestone < Base
       scoped_by :project_id
       lookup_by :name
     end

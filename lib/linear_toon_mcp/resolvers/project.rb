@@ -3,7 +3,7 @@
 module LinearToonMcp
   module Resolvers
     # Resolves a Linear project by name or slug.
-    class ProjectResolver < Base
+    class Project < Base
       lookup_by :name, :slug
     end
   end
