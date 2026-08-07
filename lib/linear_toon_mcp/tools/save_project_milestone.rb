@@ -4,8 +4,8 @@ module LinearToonMcp
   module Tools
     # Create or update a project milestone. +id+ presence determines
     # create vs update. On create, +name+ and +project+ are required;
-    # +project+ is resolved via {Resolvers::Project}. Linear has no
-    # move-between-projects update, so +project+ is rejected on update.
+    # +project+ is resolved via {Resolvers::Project}. +project+ is
+    # create-only — this tool does not move milestones between projects.
     class SaveProjectMilestone < Base
       description "Create or update a project milestone (id presence determines)"
 
@@ -73,7 +73,7 @@ module LinearToonMcp
 
       def update(id, kwargs)
         if kwargs.key?(:project)
-          raise Error, "Cannot pass `project` on update — milestones cannot be moved between projects"
+          raise Error, "Cannot pass `project` on update — this tool does not move milestones between projects"
         end
 
         submit(UPDATE_MUTATION, "projectMilestoneUpdate", id:, input: build_input(kwargs))
