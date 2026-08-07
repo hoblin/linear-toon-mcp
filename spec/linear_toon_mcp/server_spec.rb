@@ -55,6 +55,8 @@ RSpec.describe LinearToonMcp, ".server" do
         include(name: "delete_status_update", description: "Archive a status update (project or initiative)"),
         include(name: "save_project", description: "Create or update a Linear project (id presence determines)"),
         include(name: "archive_project", description: "Archive a Linear project (soft delete via projectArchive)"),
+        include(name: "save_project_milestone", description: "Create or update a project milestone (id presence determines)"),
+        include(name: "delete_project_milestone", description: "Delete a project milestone (issues are detached, not deleted)"),
         include(name: "get_team", description: "Retrieve a Linear team by id, key, or name"),
         include(name: "get_user", description: 'Retrieve a Linear user by id, name, email, or "me"'),
         include(name: "get_issue_status", description: "Retrieve an issue status (workflow state) by name or UUID, scoped to a team"),

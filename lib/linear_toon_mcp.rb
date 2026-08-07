@@ -42,6 +42,7 @@ module LinearToonMcp
         Tools::ListStatusUpdates, Tools::GetStatusUpdate,
         Tools::SaveStatusUpdate, Tools::DeleteStatusUpdate,
         Tools::SaveProject, Tools::ArchiveProject,
+        Tools::SaveProjectMilestone, Tools::DeleteProjectMilestone,
         Tools::GetTeam, Tools::GetUser, Tools::GetIssueStatus,
         Tools::CreateIssueLabel
       ]
