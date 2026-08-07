@@ -12,7 +12,7 @@ RSpec.describe LinearToonMcp, ".server" do
         jsonrpc: "2.0",
         id: 1,
         method: "initialize",
-        params: {protocolVersion: MCP::Configuration::LATEST_STABLE_PROTOCOL_VERSION, capabilities: {}, clientInfo: {name: "test"}}
+        params: {protocolVersion: MCP::Configuration::LATEST_STABLE_PROTOCOL_VERSION, capabilities: {}, clientInfo: {name: "test", version: "1.0.0"}}
       })
     end
 
