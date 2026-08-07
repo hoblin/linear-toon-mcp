@@ -68,6 +68,8 @@ Most parameters accept either a UUID or a human identifier (issue identifier lik
 | `get_project` | Retrieve a project by name, ID, or slug. Optional includes for members, milestones, and resources. |
 | `save_project` | Create or update a project. On create, `name` and `teams` (one or more) are required. Resolves names to IDs for teams, lead, members, labels, status, and initiative (initiative links on creation only — use `add_project_to_initiative` afterwards). |
 | `archive_project` | Archive a project (recoverable soft delete). Linear has no hard-delete for projects. |
+| `save_project_milestone` | Create or update a project milestone. On create, `name` and `project` are required. `sortOrder` positions the milestone among its siblings. `project` is create-only — this tool does not move milestones between projects, so it is rejected on update. |
+| `delete_project_milestone` | Delete a project milestone by ID. Issues assigned to it are detached, not deleted. |
 
 ### Initiatives
 
