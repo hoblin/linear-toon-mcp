@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "toon"
+require "toon_fu"
 
 module LinearToonMcp
   module Tools
@@ -29,7 +29,7 @@ module LinearToonMcp
         # Returns a successful MCP response with TOON-encoded +data+.
         # @return [MCP::Tool::Response]
         def success_response(data)
-          MCP::Tool::Response.new([{type: "text", text: Toon.encode(data)}])
+          MCP::Tool::Response.new([{type: "text", text: ToonFu.encode(data)}])
         end
 
         # Returns an error MCP response carrying +message+.
@@ -67,7 +67,7 @@ module LinearToonMcp
       #
       # @return [MCP::Tool::Response]
       def respond_with_warnings(data, warnings, context:)
-        text = Toon.encode(data)
+        text = ToonFu.encode(data)
         text += "\nWARNING (#{context}): #{warnings.join("; ")}" if warnings.any?
         MCP::Tool::Response.new([{type: "text", text:}])
       end
