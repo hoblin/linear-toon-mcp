@@ -163,14 +163,12 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       )
     end
 
-    it "treats duplicateOf: nil as 'remove' on update" do
+    it "clears the duplicate relation on duplicateOf: nil without creating a new one" do
       allow(client).to receive(:query)
         .with(a_string_matching(/issue\(id: \$id\)/), anything)
         .and_return("issue" => {"relations" => {"nodes" => []}})
 
       described_class.call(id: "issue-1", duplicateOf: nil)
-      # duplicateOf: nil with explicit key means "clear the duplicate relation"
-      # which routes through replace_relations (deletes existing, adds none).
       expect(client).to have_received(:query).with(a_string_matching(/issue\(id: \$id\)/), anything)
     end
 
@@ -228,8 +226,28 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       expect(response.content.first[:text]).to include("Failed to create blocks relation")
     end
 
+    it "rejects a blank project instead of resolving it" do
+      response = described_class.call(id: "issue-1", project: "")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("Project must not be blank")
+    end
+
+    it "treats project: nil as 'remove' (sends projectId: null)" do
+      described_class.call(id: "issue-1", project: nil)
+      expect(client).to have_received(:query).with(
+        a_string_matching(/issueUpdate/),
+        variables: {id: "issue-1", input: {projectId: nil}}
+      )
+    end
+
     it "rejects milestone update without project" do
       response = described_class.call(id: "issue-1", milestone: "M")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("milestone requires project")
+    end
+
+    it "rejects milestone update while clearing project" do
+      response = described_class.call(id: "issue-1", project: nil, milestone: "M")
       expect(response).to be_error
       expect(response.content.first[:text]).to include("milestone requires project")
     end

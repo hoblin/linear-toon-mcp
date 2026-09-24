@@ -27,7 +27,7 @@ module LinearToonMcp
           priority: {type: "number", description: "0=None, 1=Urgent, 2=High, 3=Normal, 4=Low"},
           state: {type: "string", description: "State name or ID"},
           labels: {type: "array", items: {type: "string"}, description: "Label names or IDs"},
-          project: {type: "string", description: "Project name or ID"},
+          project: {type: ["string", "null"], description: "Project name or ID. Null to remove (update only)"},
           cycle: {type: "string", description: "Cycle name, number, or ID"},
           estimate: {type: "number", description: "Issue estimate value"},
           dueDate: {type: "string", description: "Due date (ISO format)"},
@@ -200,8 +200,8 @@ module LinearToonMcp
           input[:labelIds] = Resolvers::IssueLabel.call_many(values: kwargs[:labels], team_id: team_id)
         end
         project_id = nil
-        if kwargs.key?(:project) && kwargs[:project]
-          project_id = Resolvers::Project.call(value: kwargs[:project])
+        if kwargs.key?(:project)
+          project_id = Resolvers::Project.call(value: kwargs[:project]) if kwargs[:project]
           input[:projectId] = project_id
         end
         if kwargs.key?(:milestone)

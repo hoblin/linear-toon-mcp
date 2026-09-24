@@ -42,7 +42,7 @@ claude mcp add linear-toon -e LINEAR_API_KEY=lin_api_xxxxx -- linear-toon-mcp
 
 ## Tools
 
-Most parameters accept either a UUID or a human identifier (issue identifier like `LIN-123`, team key like `VIB`, project/initiative/label name, user email or `"me"`); the server resolves it. `save_*` tools dispatch by `id` presence — provide an `id` to update, omit it to create. All responses are TOON-encoded.
+Most parameters accept either a UUID or a human identifier (issue identifier like `LIN-123`, team key like `VIB`, project/initiative/label name, user email or `"me"`); the server resolves it, and rejects blank values. `save_*` tools dispatch by `id` presence — provide an `id` to update, omit it to create. All responses are TOON-encoded.
 
 ### Issues
 

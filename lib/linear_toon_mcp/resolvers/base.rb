@@ -140,8 +140,9 @@ module LinearToonMcp
         # @param value [String]
         # @param scope [Hash] parent-scope kwargs (e.g. +team_id:+)
         # @return [String] resolved UUID
-        # @raise [Error] when no attribute resolves the value
+        # @raise [Error] when +value+ is blank or no attribute resolves it
         def call(value:, **scope)
+          raise Error, "#{entity_label} must not be blank" if value.strip.empty?
           new(**scope).resolve(value)
         end
 
