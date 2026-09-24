@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
                      "TOON-formatted responses for ~40-60% token savings in LLM workflows."
   spec.homepage = "https://github.com/hoblin/linear-toon-mcp"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.2"
+  spec.required_ruby_version = ">= 3.3"
 
   spec.metadata = {
     "source_code_uri" => "https://github.com/hoblin/linear-toon-mcp",
@@ -27,5 +27,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "mcp", "~> 0.11"
   spec.add_dependency "openssl", ">= 3.3.1" # CRL verification fix for Linear API SSL
-  spec.add_dependency "toon-ruby", "~> 0.1"
+  spec.add_dependency "toon-fu", "~> 4.1.0"
 end

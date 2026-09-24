@@ -15,7 +15,7 @@ The official Linear MCP server returns verbose JSON responses that consume signi
 ## Stack
 
 - **[mcp](https://rubygems.org/gems/mcp)** — MCP server framework (stdio transport)
-- **[toon-ruby](https://github.com/andrepcg/toon-ruby)** — JSON-to-TOON conversion
+- **[toon-fu](https://github.com/hoblin/toon-fu)** — TOON encoder, versioned by the spec it implements
 - **Net::HTTP** — Minimal GraphQL client for Linear API (no heavy dependencies)
 
 ## Installation

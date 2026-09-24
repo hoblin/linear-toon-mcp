@@ -19,16 +19,16 @@ bundle exec standardrb [--fix]
 
 **Tools:** Each tool is a class under `LinearToonMcp::Tools` inheriting `MCP::Tool`. Lives in `lib/linear_toon_mcp/tools/`. Tools define `description`, `annotations`, `input_schema`, and a `self.call(**kwargs, server_context: nil)` class method returning `MCP::Tool::Response`.
 
-**Response pipeline:** Linear GraphQL response -> Ruby hash -> `Toon.encode(data)` -> `MCP::Tool::Response` with text content type.
+**Response pipeline:** Linear GraphQL response -> Ruby hash -> `ToonFu.encode(data)` -> `MCP::Tool::Response` with text content type.
 
 **Linear client:** `LinearToonMcp::Client` — plain `Net::HTTP` against `https://api.linear.app/graphql`. Auth via `LINEAR_API_KEY` env var. Hardcoded query strings, no GraphQL client gem. Injected into tools via `server_context: {client:}`.
 
 ## Key Dependencies
 
 - `mcp` ~> 0.11
-- `toon-ruby` ~> 0.1 — exposes `Toon.encode(data)`
+- `toon-fu` ~> 4.1.0 — exposes `ToonFu.encode(data)`; its MAJOR.MINOR is the TOON spec version
 - `standard` (dev)
-- Ruby >= 3.2, toolchain managed by mise (Ruby 3.4)
+- Ruby >= 3.3, toolchain managed by mise (Ruby 3.4)
 
 ## Versioning & Releases
 
