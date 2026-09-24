@@ -25,6 +25,17 @@ RSpec.describe LinearToonMcp::Resolvers::Base do
     end
   end
 
+  describe "blank values" do
+    before { LinearToonMcp.client = client }
+
+    it "rejects a blank value before querying" do
+      allow(client).to receive(:query)
+      expect { LinearToonMcp::Resolvers::Project.call(value: " ") }
+        .to raise_error(LinearToonMcp::Error, /\AProject must not be blank\z/)
+      expect(client).not_to have_received(:query)
+    end
+  end
+
   describe "DSL overrides" do
     it "honors an explicit label override in not-found messages" do
       resolver = Class.new(described_class) do

@@ -163,8 +163,9 @@ module LinearToonMcp
       # each {.lookup_by} attribute is tried in declared order and the first
       # GraphQL lookup that returns a node wins.
       #
-      # @raise [Error] when nothing resolves +value+
+      # @raise [Error] when +value+ is blank or nothing resolves it
       def resolve(value)
+        raise Error, "#{self.class.entity_label} must not be blank" if value.strip.empty?
         return value if value.match?(UUID_RE)
 
         self.class.attributes.each do |attr|

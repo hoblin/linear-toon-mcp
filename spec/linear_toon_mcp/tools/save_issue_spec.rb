@@ -228,8 +228,22 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       expect(response.content.first[:text]).to include("Failed to create blocks relation")
     end
 
+    it "treats project: nil as 'remove' (sends projectId: null)" do
+      described_class.call(id: "issue-1", project: nil)
+      expect(client).to have_received(:query).with(
+        a_string_matching(/issueUpdate/),
+        variables: {id: "issue-1", input: {projectId: nil}}
+      )
+    end
+
     it "rejects milestone update without project" do
       response = described_class.call(id: "issue-1", milestone: "M")
+      expect(response).to be_error
+      expect(response.content.first[:text]).to include("milestone requires project")
+    end
+
+    it "rejects milestone update while clearing project" do
+      response = described_class.call(id: "issue-1", project: nil, milestone: "M")
       expect(response).to be_error
       expect(response.content.first[:text]).to include("milestone requires project")
     end
