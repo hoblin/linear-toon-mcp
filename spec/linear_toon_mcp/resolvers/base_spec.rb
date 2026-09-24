@@ -30,8 +30,15 @@ RSpec.describe LinearToonMcp::Resolvers::Base do
 
     it "rejects a blank value before querying" do
       allow(client).to receive(:query)
-      expect { LinearToonMcp::Resolvers::Project.call(value: " ") }
+      expect { LinearToonMcp::Resolvers::Project.call(value: "") }
         .to raise_error(LinearToonMcp::Error, /\AProject must not be blank\z/)
+      expect(client).not_to have_received(:query)
+    end
+
+    it "guards resolvers that override resolve" do
+      allow(client).to receive(:query)
+      expect { LinearToonMcp::Resolvers::ProjectStatus.call(value: " ") }
+        .to raise_error(LinearToonMcp::Error, /\AStatus must not be blank\z/)
       expect(client).not_to have_received(:query)
     end
   end

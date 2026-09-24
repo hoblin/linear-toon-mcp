@@ -140,8 +140,9 @@ module LinearToonMcp
         # @param value [String]
         # @param scope [Hash] parent-scope kwargs (e.g. +team_id:+)
         # @return [String] resolved UUID
-        # @raise [Error] when no attribute resolves the value
+        # @raise [Error] when +value+ is blank or no attribute resolves it
         def call(value:, **scope)
+          raise Error, "#{entity_label} must not be blank" if value.strip.empty?
           new(**scope).resolve(value)
         end
 
@@ -163,9 +164,8 @@ module LinearToonMcp
       # each {.lookup_by} attribute is tried in declared order and the first
       # GraphQL lookup that returns a node wins.
       #
-      # @raise [Error] when +value+ is blank or nothing resolves it
+      # @raise [Error] when nothing resolves +value+
       def resolve(value)
-        raise Error, "#{self.class.entity_label} must not be blank" if value.strip.empty?
         return value if value.match?(UUID_RE)
 
         self.class.attributes.each do |attr|
