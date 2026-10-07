@@ -44,7 +44,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
       expect(response.content.first[:text]).to include("First issue")
     end
 
-    it "passes default variables (50/updatedAt/includeArchived=false)" do
+    it "passes default variables to client" do
       response
       expect(client).to have_received(:query).with(
         described_class::QUERY,
@@ -432,7 +432,28 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
         response
         expect(client).to have_received(:query).with(
           described_class::QUERY,
-          variables: {first: 50, sort: [{"priority" => {order: "Descending"}}], includeArchived: false}
+          variables: {first: 50, sort: [{priority: {order: "Descending"}}], includeArchived: false}
+        )
+      end
+    end
+
+    context "with open bugs I created, by priority" do
+      let(:params) { {creator: "me", label: "Bug", open: true, sort: "priority", limit: 10} }
+
+      it "builds them into one query" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: {
+            first: 10,
+            sort: [{priority: {order: "Descending"}}],
+            includeArchived: false,
+            filter: {
+              creator: {isMe: {eq: true}},
+              state: {type: {nin: %w[completed canceled duplicate]}},
+              labels: {some: {name: {eqIgnoreCase: "Bug"}}}
+            }
+          }
         )
       end
     end

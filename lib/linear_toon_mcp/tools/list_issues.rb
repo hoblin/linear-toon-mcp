@@ -24,13 +24,13 @@ module LinearToonMcp
           includeArchived: {type: "boolean", description: "Include archived items (default false)"},
           label: {type: "string", description: "Label name or ID"},
           limit: {type: "integer", description: "Max results (default 50, max 250)"},
-          open: {type: "boolean", description: "Only issues not completed, canceled, or duplicate"},
+          open: {type: "boolean", description: "true: only issues not completed, canceled, or duplicate"},
           orderBy: {type: "string", description: "createdAt or updatedAt (default updatedAt)", enum: ["createdAt", "updatedAt"]},
           parentId: {type: "string", description: "Parent issue ID"},
           priority: {type: "integer", description: "0=None, 1=Urgent, 2=High, 3=Normal, 4=Low"},
           project: {type: "string", description: "Project name or ID"},
           query: {type: "string", description: "Search issue title or description"},
-          sort: {type: "string", description: "priority: Urgent first, no priority last. Replaces orderBy", enum: ["priority"]},
+          sort: {type: "string", description: "priority: Urgent first, no priority last. Not combinable with orderBy", enum: ["priority"]},
           state: {type: "string", description: "State name or ID"},
           team: {type: "string", description: "Team name or ID"},
           updatedAt: {type: "string", description: "Updated after: ISO-8601 date/duration (e.g., -P1D)"}
@@ -86,7 +86,7 @@ module LinearToonMcp
           includeArchived: includeArchived == true
         }
         if sort
-          variables[:sort] = [{sort => {order: "Descending"}}]
+          variables[:sort] = [{priority: {order: "Descending"}}]
         else
           variables[:orderBy] = orderBy || "updatedAt"
         end
