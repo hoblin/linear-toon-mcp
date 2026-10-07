@@ -27,5 +27,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "mcp", "~> 0.11"
   spec.add_dependency "openssl", ">= 3.3.1" # CRL verification fix for Linear API SSL
-  spec.add_dependency "toon-fu", "~> 4.1.0"
+  spec.add_dependency "toon-fu", "~> 4.3.0"
 end
