@@ -17,17 +17,20 @@ module LinearToonMcp
         properties: {
           assignee: {type: "string", description: 'User ID, name, email, or "me"'},
           createdAt: {type: "string", description: "Created after: ISO-8601 date/duration (e.g., -P1D)"},
+          creator: {type: "string", description: 'User ID, name, email, or "me"'},
           cursor: {type: "string", description: "Next page cursor"},
           cycle: {type: "string", description: "Cycle name, number, or ID"},
           delegate: {type: "string", description: "Agent name or ID"},
-          includeArchived: {type: "boolean", description: "Include archived items (default true)"},
+          includeArchived: {type: "boolean", description: "Include archived items (default false)"},
           label: {type: "string", description: "Label name or ID"},
           limit: {type: "integer", description: "Max results (default 50, max 250)"},
+          open: {type: "boolean", description: "Only issues not completed, canceled, or duplicate"},
           orderBy: {type: "string", description: "createdAt or updatedAt (default updatedAt)", enum: ["createdAt", "updatedAt"]},
           parentId: {type: "string", description: "Parent issue ID"},
           priority: {type: "integer", description: "0=None, 1=Urgent, 2=High, 3=Normal, 4=Low"},
           project: {type: "string", description: "Project name or ID"},
           query: {type: "string", description: "Search issue title or description"},
+          sort: {type: "string", description: "priority: Urgent first, no priority last. Replaces orderBy", enum: ["priority"]},
           state: {type: "string", description: "State name or ID"},
           team: {type: "string", description: "Team name or ID"},
           updatedAt: {type: "string", description: "Updated after: ISO-8601 date/duration (e.g., -P1D)"}
@@ -36,8 +39,8 @@ module LinearToonMcp
       )
 
       QUERY = <<~GRAPHQL
-        query($filter: IssueFilter, $first: Int, $after: String, $orderBy: PaginationOrderBy, $includeArchived: Boolean) {
-          issues(filter: $filter, first: $first, after: $after, orderBy: $orderBy, includeArchived: $includeArchived) {
+        query($filter: IssueFilter, $first: Int, $after: String, $orderBy: PaginationOrderBy, $sort: [IssueSortInput!], $includeArchived: Boolean) {
+          issues(filter: $filter, first: $first, after: $after, orderBy: $orderBy, sort: $sort, includeArchived: $includeArchived) {
             nodes {
               id
               identifier
@@ -63,23 +66,30 @@ module LinearToonMcp
 
       UUID_RE = Resolvers::UUID_RE
       NUMERIC_RE = Resolvers::NUMERIC_RE
+      CLOSED_STATE_TYPES = %w[completed canceled duplicate].freeze
 
       # standard:disable Naming/VariableName
-      def perform(assignee: nil, createdAt: nil, cursor: nil, cycle: nil,
-        delegate: nil, includeArchived: nil, label: nil, limit: nil, orderBy: nil,
-        parentId: nil, priority: nil, project: nil, query: nil, state: nil,
+      def perform(assignee: nil, createdAt: nil, creator: nil, cursor: nil, cycle: nil,
+        delegate: nil, includeArchived: nil, label: nil, limit: nil, open: nil, orderBy: nil,
+        parentId: nil, priority: nil, project: nil, query: nil, sort: nil, state: nil,
         team: nil, updatedAt: nil)
+        raise Error, "Use either orderBy or sort, not both" if orderBy && sort
+
         filter = build_filter(
-          assignee:, team:, project:, state:, label:,
+          assignee:, creator:, team:, project:, state:, open:, label:,
           priority:, parentId:, cycle:, delegate:,
           query:, createdAt:, updatedAt:
         )
 
         variables = {
           first: (limit || 50).clamp(1, 250),
-          orderBy: orderBy || "updatedAt",
-          includeArchived: includeArchived != false
+          includeArchived: includeArchived == true
         }
+        if sort
+          variables[:sort] = [{sort => {order: "Descending"}}]
+        else
+          variables[:orderBy] = orderBy || "updatedAt"
+        end
         variables[:filter] = filter unless filter.empty?
         variables[:after] = cursor if cursor
 
@@ -89,14 +99,16 @@ module LinearToonMcp
 
       private
 
-      def build_filter(assignee:, team:, project:, state:, label:,
+      def build_filter(assignee:, creator:, team:, project:, state:, open:, label:,
         priority:, parentId:, cycle:, delegate:,
         query:, createdAt:, updatedAt:)
         filter = {}
-        filter[:assignee] = assignee_filter(assignee) if assignee
+        filter[:assignee] = user_filter(assignee) if assignee
+        filter[:creator] = user_filter(creator) if creator
         filter[:team] = name_or_id(team) if team
         filter[:project] = name_or_id(project) if project
         filter[:state] = name_or_id(state) if state
+        filter[:state] = filter.fetch(:state, {}).merge(type: {nin: CLOSED_STATE_TYPES}) if open
         filter[:labels] = {some: name_or_id(label)} if label
         filter[:priority] = {eq: priority} if priority
         filter[:parent] = {id: {eq: parentId}} if parentId
@@ -114,7 +126,7 @@ module LinearToonMcp
       end
       # standard:enable Naming/VariableName
 
-      def assignee_filter(value)
+      def user_filter(value)
         return {isMe: {eq: true}} if value == "me"
         return {id: {eq: value}} if value.match?(UUID_RE)
         return {email: {eq: value}} if value.include?("@")

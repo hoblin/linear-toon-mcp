@@ -44,11 +44,11 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
       expect(response.content.first[:text]).to include("First issue")
     end
 
-    it "passes default variables to client" do
+    it "passes default variables (50/updatedAt/includeArchived=false)" do
       response
       expect(client).to have_received(:query).with(
         described_class::QUERY,
-        variables: {first: 50, orderBy: "updatedAt", includeArchived: true}
+        variables: {first: 50, orderBy: "updatedAt", includeArchived: false}
       )
     end
 
@@ -136,6 +136,62 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
       end
     end
 
+    context 'with creator "me"' do
+      let(:params) { {creator: "me"} }
+
+      it "builds isMe filter" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {creator: {isMe: {eq: true}}}
+          )
+        )
+      end
+    end
+
+    context "with creator email" do
+      let(:params) { {creator: "alice@example.com"} }
+
+      it "builds email filter" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {creator: {email: {eq: "alice@example.com"}}}
+          )
+        )
+      end
+    end
+
+    context "with creator UUID" do
+      let(:params) { {creator: "12345678-1234-1234-1234-123456789012"} }
+
+      it "builds ID filter" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {creator: {id: {eq: "12345678-1234-1234-1234-123456789012"}}}
+          )
+        )
+      end
+    end
+
+    context "with creator name" do
+      let(:params) { {creator: "Alice"} }
+
+      it "builds name filter" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {creator: {name: {eqIgnoreCase: "Alice"}}}
+          )
+        )
+      end
+    end
+
     context "with project filter" do
       let(:params) { {project: "My Project"} }
 
@@ -174,6 +230,46 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
           variables: hash_including(
             filter: {state: {name: {eqIgnoreCase: "In Progress"}}}
           )
+        )
+      end
+    end
+
+    context "with open true" do
+      let(:params) { {open: true} }
+
+      it "excludes completed, canceled and duplicate state types" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {state: {type: {nin: %w[completed canceled duplicate]}}}
+          )
+        )
+      end
+    end
+
+    context "with open true and a state" do
+      let(:params) { {open: true, state: "Todo"} }
+
+      it "combines both conditions in one state filter" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {state: {name: {eqIgnoreCase: "Todo"}, type: {nin: %w[completed canceled duplicate]}}}
+          )
+        )
+      end
+    end
+
+    context "with open false" do
+      let(:params) { {open: false} }
+
+      it "does not filter by state" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_excluding(:filter)
         )
       end
     end
@@ -329,14 +425,36 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
       end
     end
 
-    context "with includeArchived false" do
-      let(:params) { {includeArchived: false} }
+    context "with sort priority" do
+      let(:params) { {sort: "priority"} }
+
+      it "sorts by priority descending instead of orderBy" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: {first: 50, sort: [{"priority" => {order: "Descending"}}], includeArchived: false}
+        )
+      end
+    end
+
+    context "with both sort and orderBy" do
+      let(:params) { {sort: "priority", orderBy: "createdAt"} }
+
+      it "returns an error response without querying" do
+        expect(response).to be_a(MCP::Tool::Response).and be_error
+        expect(response.content.first[:text]).to include("either orderBy or sort")
+        expect(client).not_to have_received(:query)
+      end
+    end
+
+    context "with includeArchived true" do
+      let(:params) { {includeArchived: true} }
 
       it "passes includeArchived variable" do
         response
         expect(client).to have_received(:query).with(
           described_class::QUERY,
-          variables: hash_including(includeArchived: false)
+          variables: hash_including(includeArchived: true)
         )
       end
     end
