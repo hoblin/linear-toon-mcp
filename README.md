@@ -49,7 +49,7 @@ Most parameters accept either a UUID or a human identifier (issue identifier lik
 | Tool | Description |
 |------|-------------|
 | `get_issue` | Retrieve an issue by ID or identifier (e.g., `LIN-123`). Returns the issue plus its parent and direct children. |
-| `list_issues` | List issues with filters (team, assignee, state, label, priority, project, cycle) and cursor pagination. |
+| `list_issues` | List issues with filters (team, assignee, creator, state, open, label, priority, project, cycle), sort by priority, and cursor pagination. |
 | `save_issue` | Create or update an issue. Accepts names for team, assignee, state, labels, project, cycle, and milestone. Relation params (`blocks`, `relatedTo`, `duplicateOf`) and `parentId` accept UUIDs or identifiers. On create, relations are appended; on update, they replace existing. Null clears nullable fields on update. |
 
 ### Comments
