@@ -26,7 +26,7 @@ bundle exec standardrb [--fix]
 ## Key Dependencies
 
 - `mcp` ~> 0.11
-- `toon-fu` ~> 4.3.0 — exposes `ToonFu.encode(data)`; its MAJOR.MINOR is the TOON spec version
+- `toon-fu` ~> 4.4.0 — exposes `ToonFu.encode(data)`; its MAJOR.MINOR is the TOON spec version
 - `standard` (dev)
 - Ruby >= 3.3, toolchain managed by mise (Ruby 3.4)
 
