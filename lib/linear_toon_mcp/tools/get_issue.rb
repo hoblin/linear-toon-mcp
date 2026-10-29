@@ -6,7 +6,7 @@ module LinearToonMcp
     # Includes metadata, state, assignee, labels, project, team, attachments,
     # parent issue, direct child issues, and relations in both directions.
     class GetIssue < Get
-      description "Retrieve a Linear issue by ID, including its parent, direct child issues and relations: what it blocks, relates to or duplicates (relations) and what does so to it (inverseRelations)"
+      description "Retrieve a Linear issue by ID, including its parent, direct child issues and relations: what it blocks, relates to or duplicates (relations) and what blocks, relates to or duplicates it (inverseRelations)"
 
       annotations(
         read_only_hint: true,

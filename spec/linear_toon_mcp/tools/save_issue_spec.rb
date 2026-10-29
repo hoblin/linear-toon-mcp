@@ -205,7 +205,7 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       allow(client).to receive(:query)
         .with(a_string_matching(/issue\(id: \$id\)/), anything)
         .and_return("issue" => {"relations" => {"nodes" => [
-          {"id" => "rel-old", "type" => "blocks", "relatedIssue" => {"id" => "old-blocked"}}
+          {"id" => "rel-old", "type" => "blocks"}
         ]}})
       allow(client).to receive(:query)
         .with(a_string_matching(/issueRelationDelete/), anything)
@@ -250,15 +250,24 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       end
 
       it "replaces only the blockers on blockedBy, creating each from the blocker's side" do
-        described_class.call(id: "issue-1", blockedBy: ["LIN-7"])
+        described_class.call(id: "issue-1", blockedBy: ["LIN-7", "LIN-8"])
 
         expect(client).to relation_deleted("rel-blocked-by")
         expect(client).not_to relation_deleted("rel-blocks")
         expect(client).not_to relation_deleted("rel-related-from")
-        expect(client).to have_received(:query).with(
-          a_string_matching(/issueRelationCreate/),
-          variables: {input: {issueId: "LIN-7", relatedIssueId: "issue-1", type: "blocks"}}
-        )
+        %w[LIN-7 LIN-8].each do |blocker|
+          expect(client).to have_received(:query).with(
+            a_string_matching(/issueRelationCreate/),
+            variables: {input: {issueId: blocker, relatedIssueId: "issue-1", type: "blocks"}}
+          )
+        end
+      end
+
+      it "removes every blocker on an empty blockedBy" do
+        described_class.call(id: "issue-1", blockedBy: [])
+
+        expect(client).to relation_deleted("rel-blocked-by")
+        expect(client).not_to have_received(:query).with(a_string_matching(/issueRelationCreate/), anything)
       end
 
       it "keeps the blockers when replacing what the issue blocks" do
@@ -266,6 +275,20 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
 
         expect(client).to relation_deleted("rel-blocks")
         expect(client).not_to relation_deleted("rel-blocked-by")
+      end
+
+      it "replaces related issues linked from either side" do
+        described_class.call(id: "issue-1", relatedTo: ["LIN-10"])
+
+        expect(client).to relation_deleted("rel-related-from")
+        expect(client).not_to relation_deleted("rel-blocks")
+        expect(client).not_to relation_deleted("rel-blocked-by")
+      end
+
+      it "reads the existing relations once for several replaced kinds" do
+        described_class.call(id: "issue-1", blocks: [], blockedBy: [], relatedTo: [])
+
+        expect(client).to have_received(:query).with(a_string_matching(/inverseRelations/), anything).once
       end
     end
 
@@ -279,7 +302,7 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
 
       response = described_class.call(id: "issue-1", blocks: ["LIN-9"])
       expect(response.content.first[:text]).to include("WARNING (issue was updated)")
-      expect(response.content.first[:text]).to include("Failed to create blocks relation")
+      expect(response.content.first[:text]).to include("Failed to create relation: issue-1 blocks LIN-9")
     end
 
     it "rejects a blank project instead of resolving it" do
