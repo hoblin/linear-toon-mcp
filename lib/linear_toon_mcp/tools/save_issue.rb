@@ -86,8 +86,8 @@ module LinearToonMcp
       RELATIONS_QUERY = <<~GRAPHQL
         query($id: String!) {
           issue(id: $id) {
-            relations { nodes { id type } }
-            inverseRelations { nodes { id type } }
+            relations(first: 250) { nodes { id type } pageInfo { hasNextPage } }
+            inverseRelations(first: 250) { nodes { id type } pageInfo { hasNextPage } }
           }
         }
       GRAPHQL
@@ -258,8 +258,10 @@ module LinearToonMcp
         return if replaced.empty?
 
         existing = client.query(RELATIONS_QUERY, variables: {id: issue_id})["issue"] || {}
-        replaced.each_value { |relation| delete_relations(existing, relation) }
-        append_relations(issue_id, kwargs)
+        replaced.each do |param, relation|
+          delete_relations(existing, relation)
+          append_relations(issue_id, kwargs.slice(param))
+        end
       end
 
       def create_relation(issue_id, other_id, relation)
@@ -271,7 +273,12 @@ module LinearToonMcp
       end
 
       def delete_relations(existing, relation)
-        relation[:stored_in].flat_map { |connection| existing.dig(connection, "nodes") || [] }.each do |rel|
+        connections = relation[:stored_in].map { |connection| existing[connection] || {} }
+        if connections.any? { |connection| connection.dig("pageInfo", "hasNextPage") }
+          raise Error, "Cannot replace #{relation[:type]} relations: more than 250 exist"
+        end
+
+        connections.flat_map { |connection| connection["nodes"] || [] }.each do |rel|
           next unless rel["type"] == relation[:type]
           del = client.query(RELATION_DELETE_MUTATION, variables: {id: rel["id"]})
           next if del.dig("issueRelationDelete", "success")

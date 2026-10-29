@@ -285,6 +285,34 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
         expect(client).not_to relation_deleted("rel-blocked-by")
       end
 
+      it "leaves later kinds untouched when an earlier kind fails to recreate" do
+        allow(client).to receive(:query)
+          .with(a_string_matching(/issueRelationCreate/), anything)
+          .and_return("issueRelationCreate" => {"success" => false})
+
+        response = described_class.call(id: "issue-1", blocks: ["LIN-9"], relatedTo: ["LIN-10"])
+
+        expect(response.content.first[:text]).to include("Failed to create relation: issue-1 blocks LIN-9")
+        expect(client).not_to relation_deleted("rel-related-from")
+      end
+
+      it "refuses to replace a kind whose relations do not fit in one page" do
+        allow(client).to receive(:query)
+          .with(a_string_matching(/issue\(id: \$id\)/), anything)
+          .and_return("issue" => {
+            "relations" => {"nodes" => [], "pageInfo" => {"hasNextPage" => false}},
+            "inverseRelations" => {
+              "nodes" => [{"id" => "rel-blocked-by", "type" => "blocks"}],
+              "pageInfo" => {"hasNextPage" => true}
+            }
+          })
+
+        response = described_class.call(id: "issue-1", blockedBy: [])
+
+        expect(response.content.first[:text]).to include("Cannot replace blocks relations: more than 250 exist")
+        expect(client).not_to relation_deleted("rel-blocked-by")
+      end
+
       it "reads the existing relations once for several replaced kinds" do
         described_class.call(id: "issue-1", blocks: [], blockedBy: [], relatedTo: [])
 
