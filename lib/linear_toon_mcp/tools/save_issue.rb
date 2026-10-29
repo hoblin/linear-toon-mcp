@@ -32,8 +32,9 @@ module LinearToonMcp
           estimate: {type: "number", description: "Issue estimate value"},
           dueDate: {type: "string", description: "Due date (ISO format)"},
           parentId: {type: ["string", "null"], description: "Parent issue UUID or identifier. Null to remove (update only)"},
-          blocks: {type: "array", items: {type: "string"}, description: "Issue UUIDs or identifiers this blocks. On update, replaces existing"},
-          relatedTo: {type: "array", items: {type: "string"}, description: "Related issue UUIDs or identifiers. On update, replaces existing"},
+          blocks: {type: "array", items: {type: "string"}, description: "Issue UUIDs or identifiers this blocks. On update, replaces existing; read them with get_issue first"},
+          blockedBy: {type: "array", items: {type: "string"}, description: "Issue UUIDs or identifiers that block this. On update, replaces existing; read them with get_issue first"},
+          relatedTo: {type: "array", items: {type: "string"}, description: "Related issue UUIDs or identifiers. On update, replaces existing; read them with get_issue first"},
           duplicateOf: {type: ["string", "null"], description: "Duplicate-of issue UUID or identifier. Null to remove (update only)"},
           milestone: {type: "string", description: "Milestone name or ID"},
           delegate: {type: ["string", "null"], description: "Agent name or ID. Null to remove (update only)"},
@@ -85,7 +86,8 @@ module LinearToonMcp
       RELATIONS_QUERY = <<~GRAPHQL
         query($id: String!) {
           issue(id: $id) {
-            relations { nodes { id type relatedIssue { id } } }
+            relations { nodes { id type } }
+            inverseRelations { nodes { id type } }
           }
         }
       GRAPHQL
@@ -246,6 +248,7 @@ module LinearToonMcp
 
       def append_relations(issue_id, kwargs)
         Array(kwargs[:blocks]).each { |id| create_relation(issue_id, id, "blocks") }
+        Array(kwargs[:blockedBy]).each { |id| create_relation(id, issue_id, "blocks") }
         Array(kwargs[:relatedTo]).each { |id| create_relation(issue_id, id, "related") }
         create_relation(issue_id, kwargs[:duplicateOf], "duplicate") if kwargs[:duplicateOf]
       end
@@ -254,9 +257,12 @@ module LinearToonMcp
         RELATION_TYPE_MAP.each do |param, type|
           next unless kwargs.key?(param)
           values = (param == :duplicateOf) ? [kwargs[param]].compact : Array(kwargs[param])
-          delete_existing_relations(issue_id, type)
+          delete_existing_relations(issue_id, "relations", type)
           values.each { |related_id| create_relation(issue_id, related_id, type) }
         end
+        return unless kwargs.key?(:blockedBy)
+        delete_existing_relations(issue_id, "inverseRelations", "blocks")
+        Array(kwargs[:blockedBy]).each { |blocker_id| create_relation(blocker_id, issue_id, "blocks") }
       end
 
       def create_relation(issue_id, related_issue_id, type)
@@ -266,9 +272,9 @@ module LinearToonMcp
         raise Error, "Failed to create #{type} relation with #{related_issue_id}"
       end
 
-      def delete_existing_relations(issue_id, type)
+      def delete_existing_relations(issue_id, connection, type)
         data = client.query(RELATIONS_QUERY, variables: {id: issue_id})
-        relations = data.dig("issue", "relations", "nodes") || []
+        relations = data.dig("issue", connection, "nodes") || []
         relations.each do |rel|
           next unless rel["type"] == type
           del = client.query(RELATION_DELETE_MUTATION, variables: {id: rel["id"]})

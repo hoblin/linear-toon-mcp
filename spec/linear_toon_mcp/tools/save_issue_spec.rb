@@ -109,6 +109,19 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       )
     end
 
+    it "appends blockers as blocks relations from the blocker to the new issue" do
+      allow(client).to receive(:query)
+        .with(a_string_matching(/issueRelationCreate/), anything)
+        .and_return("issueRelationCreate" => {"success" => true})
+
+      described_class.call(title: "T", team: "X", blockedBy: ["LIN-7"])
+
+      expect(client).to have_received(:query).with(
+        a_string_matching(/issueRelationCreate/),
+        variables: {input: {issueId: "LIN-7", relatedIssueId: "issue-1", type: "blocks"}}
+      )
+    end
+
     it "appends link attachments and aggregates failures as warnings" do
       allow(client).to receive(:query)
         .with(a_string_matching(/attachmentLinkURL/), anything)
@@ -211,6 +224,49 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
         a_string_matching(/issueRelationCreate/),
         variables: {input: hash_including(relatedIssueId: "LIN-9", type: "blocks")}
       )
+    end
+
+    context "with relations stored in both directions" do
+      before do
+        allow(client).to receive(:query)
+          .with(a_string_matching(/issue\(id: \$id\)/), anything)
+          .and_return("issue" => {
+            "relations" => {"nodes" => [{"id" => "rel-blocks", "type" => "blocks"}]},
+            "inverseRelations" => {"nodes" => [
+              {"id" => "rel-blocked-by", "type" => "blocks"},
+              {"id" => "rel-related-from", "type" => "related"}
+            ]}
+          })
+        allow(client).to receive(:query)
+          .with(a_string_matching(/issueRelationDelete/), anything)
+          .and_return("issueRelationDelete" => {"success" => true})
+        allow(client).to receive(:query)
+          .with(a_string_matching(/issueRelationCreate/), anything)
+          .and_return("issueRelationCreate" => {"success" => true})
+      end
+
+      def relation_deleted(relation_id)
+        have_received(:query).with(a_string_matching(/issueRelationDelete/), variables: {id: relation_id})
+      end
+
+      it "replaces only the blockers on blockedBy, creating each from the blocker's side" do
+        described_class.call(id: "issue-1", blockedBy: ["LIN-7"])
+
+        expect(client).to relation_deleted("rel-blocked-by")
+        expect(client).not_to relation_deleted("rel-blocks")
+        expect(client).not_to relation_deleted("rel-related-from")
+        expect(client).to have_received(:query).with(
+          a_string_matching(/issueRelationCreate/),
+          variables: {input: {issueId: "LIN-7", relatedIssueId: "issue-1", type: "blocks"}}
+        )
+      end
+
+      it "keeps the blockers when replacing what the issue blocks" do
+        described_class.call(id: "issue-1", blocks: ["LIN-9"])
+
+        expect(client).to relation_deleted("rel-blocks")
+        expect(client).not_to relation_deleted("rel-blocked-by")
+      end
     end
 
     it "aggregates post-update failures as warnings" do
