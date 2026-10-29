@@ -30,7 +30,7 @@ RSpec.describe LinearToonMcp, ".server" do
 
     it "lists all tools" do
       expect(result[:result][:tools]).to contain_exactly(
-        include(name: "get_issue", description: "Retrieve a Linear issue by ID, including its parent and direct child issues"),
+        include(name: "get_issue", description: "Retrieve a Linear issue by ID, including its parent, direct child issues and relations: what it blocks, relates to or duplicates (relations) and what does so to it (inverseRelations)"),
         include(name: "list_issues", description: "List issues with optional filters and pagination"),
         include(name: "list_issue_statuses", description: "List available issue statuses in a Linear team"),
         include(name: "list_teams", description: "List teams in the workspace"),
