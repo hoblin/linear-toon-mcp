@@ -109,6 +109,19 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       )
     end
 
+    it "appends blockers as blocks relations from the blocker to the new issue" do
+      allow(client).to receive(:query)
+        .with(a_string_matching(/issueRelationCreate/), anything)
+        .and_return("issueRelationCreate" => {"success" => true})
+
+      described_class.call(title: "T", team: "X", blockedBy: ["LIN-7"])
+
+      expect(client).to have_received(:query).with(
+        a_string_matching(/issueRelationCreate/),
+        variables: {input: {issueId: "LIN-7", relatedIssueId: "issue-1", type: "blocks"}}
+      )
+    end
+
     it "appends link attachments and aggregates failures as warnings" do
       allow(client).to receive(:query)
         .with(a_string_matching(/attachmentLinkURL/), anything)
@@ -192,7 +205,7 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       allow(client).to receive(:query)
         .with(a_string_matching(/issue\(id: \$id\)/), anything)
         .and_return("issue" => {"relations" => {"nodes" => [
-          {"id" => "rel-old", "type" => "blocks", "relatedIssue" => {"id" => "old-blocked"}}
+          {"id" => "rel-old", "type" => "blocks"}
         ]}})
       allow(client).to receive(:query)
         .with(a_string_matching(/issueRelationDelete/), anything)
@@ -213,6 +226,100 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
       )
     end
 
+    context "with relations stored in both directions" do
+      before do
+        allow(client).to receive(:query)
+          .with(a_string_matching(/issue\(id: \$id\)/), anything)
+          .and_return("issue" => {
+            "relations" => {"nodes" => [{"id" => "rel-blocks", "type" => "blocks"}]},
+            "inverseRelations" => {"nodes" => [
+              {"id" => "rel-blocked-by", "type" => "blocks"},
+              {"id" => "rel-related-from", "type" => "related"}
+            ]}
+          })
+        allow(client).to receive(:query)
+          .with(a_string_matching(/issueRelationDelete/), anything)
+          .and_return("issueRelationDelete" => {"success" => true})
+        allow(client).to receive(:query)
+          .with(a_string_matching(/issueRelationCreate/), anything)
+          .and_return("issueRelationCreate" => {"success" => true})
+      end
+
+      def relation_deleted(relation_id)
+        have_received(:query).with(a_string_matching(/issueRelationDelete/), variables: {id: relation_id})
+      end
+
+      it "replaces only the blockers on blockedBy, creating each from the blocker's side" do
+        described_class.call(id: "issue-1", blockedBy: ["LIN-7", "LIN-8"])
+
+        expect(client).to relation_deleted("rel-blocked-by")
+        expect(client).not_to relation_deleted("rel-blocks")
+        expect(client).not_to relation_deleted("rel-related-from")
+        %w[LIN-7 LIN-8].each do |blocker|
+          expect(client).to have_received(:query).with(
+            a_string_matching(/issueRelationCreate/),
+            variables: {input: {issueId: blocker, relatedIssueId: "issue-1", type: "blocks"}}
+          )
+        end
+      end
+
+      it "removes every blocker on an empty blockedBy" do
+        described_class.call(id: "issue-1", blockedBy: [])
+
+        expect(client).to relation_deleted("rel-blocked-by")
+        expect(client).not_to have_received(:query).with(a_string_matching(/issueRelationCreate/), anything)
+      end
+
+      it "keeps the blockers when replacing what the issue blocks" do
+        described_class.call(id: "issue-1", blocks: ["LIN-9"])
+
+        expect(client).to relation_deleted("rel-blocks")
+        expect(client).not_to relation_deleted("rel-blocked-by")
+      end
+
+      it "replaces related issues linked from either side" do
+        described_class.call(id: "issue-1", relatedTo: ["LIN-10"])
+
+        expect(client).to relation_deleted("rel-related-from")
+        expect(client).not_to relation_deleted("rel-blocks")
+        expect(client).not_to relation_deleted("rel-blocked-by")
+      end
+
+      it "leaves later kinds untouched when an earlier kind fails to recreate" do
+        allow(client).to receive(:query)
+          .with(a_string_matching(/issueRelationCreate/), anything)
+          .and_return("issueRelationCreate" => {"success" => false})
+
+        response = described_class.call(id: "issue-1", blocks: ["LIN-9"], relatedTo: ["LIN-10"])
+
+        expect(response.content.first[:text]).to include("Failed to create relation: issue-1 blocks LIN-9")
+        expect(client).not_to relation_deleted("rel-related-from")
+      end
+
+      it "refuses to replace a kind whose relations do not fit in one page" do
+        allow(client).to receive(:query)
+          .with(a_string_matching(/issue\(id: \$id\)/), anything)
+          .and_return("issue" => {
+            "relations" => {"nodes" => [], "pageInfo" => {"hasNextPage" => false}},
+            "inverseRelations" => {
+              "nodes" => [{"id" => "rel-blocked-by", "type" => "blocks"}],
+              "pageInfo" => {"hasNextPage" => true}
+            }
+          })
+
+        response = described_class.call(id: "issue-1", blockedBy: [])
+
+        expect(response.content.first[:text]).to include("Cannot replace blocks relations: more than 250 exist")
+        expect(client).not_to relation_deleted("rel-blocked-by")
+      end
+
+      it "reads the existing relations once for several replaced kinds" do
+        described_class.call(id: "issue-1", blocks: [], blockedBy: [], relatedTo: [])
+
+        expect(client).to have_received(:query).with(a_string_matching(/inverseRelations/), anything).once
+      end
+    end
+
     it "aggregates post-update failures as warnings" do
       allow(client).to receive(:query)
         .with(a_string_matching(/issue\(id: \$id\)/), anything)
@@ -223,7 +330,7 @@ RSpec.describe LinearToonMcp::Tools::SaveIssue do
 
       response = described_class.call(id: "issue-1", blocks: ["LIN-9"])
       expect(response.content.first[:text]).to include("WARNING (issue was updated)")
-      expect(response.content.first[:text]).to include("Failed to create blocks relation")
+      expect(response.content.first[:text]).to include("Failed to create relation: issue-1 blocks LIN-9")
     end
 
     it "rejects a blank project instead of resolving it" do

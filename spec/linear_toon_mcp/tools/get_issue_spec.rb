@@ -49,6 +49,32 @@ RSpec.describe LinearToonMcp::Tools::GetIssue do
               "state" => {"name" => "In Progress"}
             }
           ]
+        },
+        "relations" => {
+          "nodes" => [
+            {
+              "type" => "blocks",
+              "relatedIssue" => {
+                "identifier" => "TEST-4",
+                "title" => "Waits on the fix",
+                "url" => "https://linear.app/test/issue/TEST-4",
+                "state" => {"name" => "Todo"}
+              }
+            }
+          ]
+        },
+        "inverseRelations" => {
+          "nodes" => [
+            {
+              "type" => "blocks",
+              "issue" => {
+                "identifier" => "TEST-5",
+                "title" => "Blocks the fix",
+                "url" => "https://linear.app/test/issue/TEST-5",
+                "state" => {"name" => "In Review"}
+              }
+            }
+          ]
         }
       }
     end
@@ -87,6 +113,23 @@ RSpec.describe LinearToonMcp::Tools::GetIssue do
       )
     end
 
+    it "renders relations in both directions as tables" do
+      text = response.content.first[:text]
+      expect(text).to include("nodes[1]{type,relatedIssue{identifier,title,url,state{name}}}:")
+      expect(text).to include('blocks,TEST-4,Waits on the fix,"https://linear.app/test/issue/TEST-4",Todo')
+      expect(text).to include("nodes[1]{type,issue{identifier,title,url,state{name}}}:")
+      expect(text).to include('blocks,TEST-5,Blocks the fix,"https://linear.app/test/issue/TEST-5",In Review')
+    end
+
+    it "requests capped relations in both directions from Linear" do
+      response
+      expect(client).to have_received(:query).with(
+        a_string_matching(/ relations\(first: 50\) \{ nodes \{ type relatedIssue \{ identifier title url state \{ name \} \} \} \}/)
+          .and(a_string_matching(/inverseRelations\(first: 50\) \{ nodes \{ type issue \{ identifier title url state \{ name \} \} \} \}/)),
+        variables: {id: "TEST-1"}
+      )
+    end
+
     it "queries Linear with the issue ID" do
       response
       expect(client).to have_received(:query).with(
@@ -95,11 +138,13 @@ RSpec.describe LinearToonMcp::Tools::GetIssue do
       )
     end
 
-    context "when the issue has no parent and no children" do
+    context "when the issue has no parent, children or relations" do
       let(:issue_data) do
         super().merge(
           "parent" => nil,
-          "children" => {"nodes" => []}
+          "children" => {"nodes" => []},
+          "relations" => {"nodes" => []},
+          "inverseRelations" => {"nodes" => []}
         )
       end
 

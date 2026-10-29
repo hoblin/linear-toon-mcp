@@ -32,8 +32,9 @@ module LinearToonMcp
           estimate: {type: "number", description: "Issue estimate value"},
           dueDate: {type: "string", description: "Due date (ISO format)"},
           parentId: {type: ["string", "null"], description: "Parent issue UUID or identifier. Null to remove (update only)"},
-          blocks: {type: "array", items: {type: "string"}, description: "Issue UUIDs or identifiers this blocks. On update, replaces existing"},
-          relatedTo: {type: "array", items: {type: "string"}, description: "Related issue UUIDs or identifiers. On update, replaces existing"},
+          blocks: {type: "array", items: {type: "string"}, description: "Issue UUIDs or identifiers this blocks. On update, replaces existing; read them with get_issue first"},
+          blockedBy: {type: "array", items: {type: "string"}, description: "Issue UUIDs or identifiers that block this. On update, replaces existing; read them with get_issue first"},
+          relatedTo: {type: "array", items: {type: "string"}, description: "Related issue UUIDs or identifiers. On update, replaces existing; read them with get_issue first"},
           duplicateOf: {type: ["string", "null"], description: "Duplicate-of issue UUID or identifier. Null to remove (update only)"},
           milestone: {type: "string", description: "Milestone name or ID"},
           delegate: {type: ["string", "null"], description: "Agent name or ID. Null to remove (update only)"},
@@ -85,7 +86,8 @@ module LinearToonMcp
       RELATIONS_QUERY = <<~GRAPHQL
         query($id: String!) {
           issue(id: $id) {
-            relations { nodes { id type relatedIssue { id } } }
+            relations(first: 250) { nodes { id type } pageInfo { hasNextPage } }
+            inverseRelations(first: 250) { nodes { id type } pageInfo { hasNextPage } }
           }
         }
       GRAPHQL
@@ -102,10 +104,11 @@ module LinearToonMcp
         }
       GRAPHQL
 
-      RELATION_TYPE_MAP = {
-        blocks: "blocks",
-        relatedTo: "related",
-        duplicateOf: "duplicate"
+      RELATIONS = {
+        blocks: {type: "blocks", stored_in: %w[relations]},
+        blockedBy: {type: "blocks", stored_in: %w[inverseRelations], inverse: true},
+        relatedTo: {type: "related", stored_in: %w[relations inverseRelations]},
+        duplicateOf: {type: "duplicate", stored_in: %w[relations]}
       }.freeze
 
       # standard:disable Naming/VariableName, Metrics/MethodLength
@@ -245,35 +248,41 @@ module LinearToonMcp
       end
 
       def append_relations(issue_id, kwargs)
-        Array(kwargs[:blocks]).each { |id| create_relation(issue_id, id, "blocks") }
-        Array(kwargs[:relatedTo]).each { |id| create_relation(issue_id, id, "related") }
-        create_relation(issue_id, kwargs[:duplicateOf], "duplicate") if kwargs[:duplicateOf]
-      end
-
-      def replace_relations(issue_id, kwargs)
-        RELATION_TYPE_MAP.each do |param, type|
-          next unless kwargs.key?(param)
-          values = (param == :duplicateOf) ? [kwargs[param]].compact : Array(kwargs[param])
-          delete_existing_relations(issue_id, type)
-          values.each { |related_id| create_relation(issue_id, related_id, type) }
+        RELATIONS.each do |param, relation|
+          Array(kwargs[param]).each { |other_id| create_relation(issue_id, other_id, relation) }
         end
       end
 
-      def create_relation(issue_id, related_issue_id, type)
-        input = {issueId: issue_id, relatedIssueId: related_issue_id, type: type}
-        data = client.query(RELATION_CREATE_MUTATION, variables: {input: input})
-        return if data.dig("issueRelationCreate", "success")
-        raise Error, "Failed to create #{type} relation with #{related_issue_id}"
+      def replace_relations(issue_id, kwargs)
+        replaced = RELATIONS.slice(*kwargs.keys)
+        return if replaced.empty?
+
+        existing = client.query(RELATIONS_QUERY, variables: {id: issue_id})["issue"] || {}
+        replaced.each do |param, relation|
+          delete_relations(existing, relation)
+          append_relations(issue_id, kwargs.slice(param))
+        end
       end
 
-      def delete_existing_relations(issue_id, type)
-        data = client.query(RELATIONS_QUERY, variables: {id: issue_id})
-        relations = data.dig("issue", "relations", "nodes") || []
-        relations.each do |rel|
-          next unless rel["type"] == type
+      def create_relation(issue_id, other_id, relation)
+        from, to = relation[:inverse] ? [other_id, issue_id] : [issue_id, other_id]
+        input = {issueId: from, relatedIssueId: to, type: relation[:type]}
+        data = client.query(RELATION_CREATE_MUTATION, variables: {input: input})
+        return if data.dig("issueRelationCreate", "success")
+        raise Error, "Failed to create relation: #{from} #{relation[:type]} #{to}"
+      end
+
+      def delete_relations(existing, relation)
+        connections = relation[:stored_in].map { |connection| existing[connection] || {} }
+        if connections.any? { |connection| connection.dig("pageInfo", "hasNextPage") }
+          raise Error, "Cannot replace #{relation[:type]} relations: more than 250 exist"
+        end
+
+        connections.flat_map { |connection| connection["nodes"] || [] }.each do |rel|
+          next unless rel["type"] == relation[:type]
           del = client.query(RELATION_DELETE_MUTATION, variables: {id: rel["id"]})
           next if del.dig("issueRelationDelete", "success")
-          raise Error, "Failed to delete #{type} relation #{rel["id"]}"
+          raise Error, "Failed to delete #{relation[:type]} relation #{rel["id"]}"
         end
       end
 
