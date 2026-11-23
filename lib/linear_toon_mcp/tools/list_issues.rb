@@ -21,7 +21,7 @@ module LinearToonMcp
           cursor: {type: "string", description: "Next page cursor"},
           cycle: {type: "string", description: "Cycle name, number, or ID"},
           delegate: {type: "string", description: "Agent name or ID"},
-          dueDate: {type: "string", description: "Due on or before: YYYY-MM-DD or ISO-8601 duration (e.g., P7D, -P1D)"},
+          dueDate: {type: "string", description: "Due on or before, past due included: YYYY-MM-DD or ISO-8601 duration (P7D ahead, -P1D ago)"},
           includeArchived: {type: "boolean", description: "Include archived items (default false)"},
           label: {type: "string", description: "Label name or ID"},
           limit: {type: "integer", description: "Max results (default 50, max 250)"},

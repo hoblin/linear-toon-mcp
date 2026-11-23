@@ -529,27 +529,24 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
       end
     end
 
-    context "with dueDate duration" do
-      let(:params) { {dueDate: "P7D"} }
-
-      it "filters issues due on or before it, leaving the duration for Linear to resolve" do
-        response
-        expect(client).to have_received(:query).with(
-          described_class::QUERY,
-          variables: hash_including(filter: {dueDate: {lte: "P7D"}})
-        )
-      end
+    it "requests each issue's due date from Linear" do
+      response
+      expect(client).to have_received(:query).with(a_string_matching(/^\s+dueDate$/), variables: anything)
     end
 
-    context "with dueDate date" do
-      let(:params) { {dueDate: "2026-12-31"} }
+    context "with dueDate" do
+      {"date" => "2026-12-31", "duration ahead" => "P7D", "duration ago" => "-P1D"}.each do |form, due|
+        context "as a #{form}" do
+          let(:params) { {dueDate: due} }
 
-      it "filters issues due on or before that date" do
-        response
-        expect(client).to have_received(:query).with(
-          described_class::QUERY,
-          variables: hash_including(filter: {dueDate: {lte: "2026-12-31"}})
-        )
+          it "filters issues due on or before it, passing the value for Linear to resolve" do
+            response
+            expect(client).to have_received(:query).with(
+              described_class::QUERY,
+              variables: hash_including(filter: {dueDate: {lte: due}})
+            )
+          end
+        end
       end
     end
 
