@@ -16,6 +16,7 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
             "priority" => 2,
             "priorityLabel" => "High",
             "url" => "https://linear.app/test/issue/TEST-1",
+            "dueDate" => "2026-01-15",
             "createdAt" => "2026-01-01T00:00:00.000Z",
             "updatedAt" => "2026-01-02T00:00:00.000Z",
             "state" => {"name" => "In Progress"},
@@ -523,6 +524,45 @@ RSpec.describe LinearToonMcp::Tools::ListIssues do
             filter: hash_including(
               updatedAt: {gte: match(/\A\d{4}-\d{2}-\d{2}T/)}
             )
+          )
+        )
+      end
+    end
+
+    it "requests each issue's due date from Linear" do
+      response
+      expect(client).to have_received(:query).with(a_string_matching(/^\s+dueDate$/), variables: anything)
+    end
+
+    context "with dueDate" do
+      {"date" => "2026-12-31", "duration ahead" => "P7D", "duration ago" => "-P1D"}.each do |form, due|
+        context "as a #{form}" do
+          let(:params) { {dueDate: due} }
+
+          it "filters issues due on or before it, passing the value for Linear to resolve" do
+            response
+            expect(client).to have_received(:query).with(
+              described_class::QUERY,
+              variables: hash_including(filter: {dueDate: {lte: due}})
+            )
+          end
+        end
+      end
+    end
+
+    context "with open issues of mine due within a week" do
+      let(:params) { {assignee: "me", open: true, dueDate: "P7D"} }
+
+      it "combines the due date with the other filters" do
+        response
+        expect(client).to have_received(:query).with(
+          described_class::QUERY,
+          variables: hash_including(
+            filter: {
+              assignee: {isMe: {eq: true}},
+              state: {type: {nin: %w[completed canceled duplicate]}},
+              dueDate: {lte: "P7D"}
+            }
           )
         )
       end
