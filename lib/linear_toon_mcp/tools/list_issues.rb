@@ -21,6 +21,7 @@ module LinearToonMcp
           cursor: {type: "string", description: "Next page cursor"},
           cycle: {type: "string", description: "Cycle name, number, or ID"},
           delegate: {type: "string", description: "Agent name or ID"},
+          dueDate: {type: "string", description: "Due on or before: YYYY-MM-DD or ISO-8601 duration (e.g., P7D, -P1D)"},
           includeArchived: {type: "boolean", description: "Include archived items (default false)"},
           label: {type: "string", description: "Label name or ID"},
           limit: {type: "integer", description: "Max results (default 50, max 250)"},
@@ -48,6 +49,7 @@ module LinearToonMcp
               priority
               priorityLabel
               url
+              dueDate
               createdAt
               updatedAt
               state { name }
@@ -70,15 +72,15 @@ module LinearToonMcp
 
       # standard:disable Naming/VariableName
       def perform(assignee: nil, createdAt: nil, creator: nil, cursor: nil, cycle: nil,
-        delegate: nil, includeArchived: nil, label: nil, limit: nil, open: nil, orderBy: nil,
-        parentId: nil, priority: nil, project: nil, query: nil, sort: nil, state: nil,
-        team: nil, updatedAt: nil)
+        delegate: nil, dueDate: nil, includeArchived: nil, label: nil, limit: nil, open: nil,
+        orderBy: nil, parentId: nil, priority: nil, project: nil, query: nil, sort: nil,
+        state: nil, team: nil, updatedAt: nil)
         raise Error, "Use either orderBy or sort, not both" if orderBy && sort
 
         filter = build_filter(
           assignee:, creator:, team:, project:, state:, open:, label:,
           priority:, parentId:, cycle:, delegate:,
-          query:, createdAt:, updatedAt:
+          query:, createdAt:, updatedAt:, dueDate:
         )
 
         variables = {
@@ -101,7 +103,7 @@ module LinearToonMcp
 
       def build_filter(assignee:, creator:, team:, project:, state:, open:, label:,
         priority:, parentId:, cycle:, delegate:,
-        query:, createdAt:, updatedAt:)
+        query:, createdAt:, updatedAt:, dueDate:)
         filter = {}
         filter[:assignee] = user_filter(assignee) if assignee
         filter[:creator] = user_filter(creator) if creator
@@ -122,6 +124,7 @@ module LinearToonMcp
         end
         filter[:createdAt] = {gte: resolve_date(createdAt)} if createdAt
         filter[:updatedAt] = {gte: resolve_date(updatedAt)} if updatedAt
+        filter[:dueDate] = {lte: dueDate} if dueDate
         filter
       end
       # standard:enable Naming/VariableName
